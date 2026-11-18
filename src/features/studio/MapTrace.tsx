@@ -18,6 +18,7 @@ export default function MapTrace() {
   const map = useRef<MlMap | null>(null);
   const [pts, setPts] = useState<LL[]>([]);
   const [failed, setFailed] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!box.current) return;
@@ -39,6 +40,8 @@ export default function MapTrace() {
         layers: [{ id: 'sat', type: 'raster', source: 'sat' }],
       },
     });
+    m.on('load', () => setReady(true));
+    m.on('styledata', () => setReady(true));
     m.on('error', () => setFailed(true));
     m.on('click', (e) => setPts((p) => [...p, [e.lngLat.lng, e.lngLat.lat]]));
     m.doubleClickZoom.disable();
@@ -49,7 +52,7 @@ export default function MapTrace() {
 
   useEffect(() => {
     const m = map.current;
-    if (!m) return;
+    if (!m || !ready) return;
     const data: Feature = {
       type: 'Feature',
       properties: {},
@@ -64,9 +67,8 @@ export default function MapTrace() {
         m.addLayer({ id: 'trace-line', type: 'line', source: 'trace', paint: { 'line-color': '#FF6B1A', 'line-width': 2 } });
       }
     };
-    if (m.isStyleLoaded()) apply();
-    else m.once('load', apply);
-  }, [pts]);
+    if (ready) apply();
+  }, [pts, ready]);
 
   const local = pts.length >= 3 ? lonLatToLocal(pts, pts.reduce((a, p) => [a[0] + p[0] / pts.length, a[1] + p[1] / pts.length], [0, 0])) : null;
 

@@ -1,8 +1,12 @@
 // Wizard "Land boundary": trace corners on Esri satellite imagery, import KML / GeoJSON / DXF,
 // or jump to coordinates pasted from any map. Returns a centred local polygon + anchor.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Map as MlMap, type GeoJSONSource } from 'maplibre-gl';
-import type { Feature } from 'geojson';
+import type { Feature, FeatureCollection } from 'geojson';
+import { generate } from '@/engine/layout';
+import { difference, union } from '@/engine/clip';
+import type { Params, Layout } from '@/engine/types';
+import type { Region } from '@/engine/geometry';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { centre } from '@/engine/parcel';
 import { area, ensureCCW, type Pt } from '@/engine/geometry';
@@ -15,7 +19,20 @@ type LL = [number, number];
 const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const btn = 'h-8 rounded-[4px] border border-line px-3 text-[12.5px] hover:border-signal disabled:opacity-40';
 
-export default function BoundaryMap({ value, onChange }: { value?: Boundary; onChange: (b: Boundary | undefined) => void }) {
+function layoutGeo(l: Layout, anchor: { lat: number; lon: number }): FeatureCollection {
+  const ll = (r: Region) => r.map((ring) => [...ring, ring[0]].map((p) => localToLonLat(p, anchor)));
+  const blocks = union(l.blocks.flatMap((b) => b.region));
+  return {
+    type: 'FeatureCollection',
+    features: [
+      { type: 'Feature', properties: { kind: 'road' }, geometry: { type: 'Polygon', coordinates: ll(difference([l.parcel], blocks)) } },
+      ...l.open.map((o) => ({ type: 'Feature' as const, properties: { kind: 'open' }, geometry: { type: 'Polygon' as const, coordinates: ll(o.region) } })),
+      ...l.plots.map((p) => ({ type: 'Feature' as const, properties: { kind: 'plot' }, geometry: { type: 'Polygon' as const, coordinates: ll(p.region) } })),
+    ],
+  };
+}
+
+export default function BoundaryMap({ value, onChange, params, titleAcres }: { value?: Boundary; onChange: (b: Boundary | undefined) => void; params?: Params; titleAcres?: number }) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const start = value?.anchor ?? { lat: 17.385, lon: 78.4867 };
@@ -28,6 +45,7 @@ export default function BoundaryMap({ value, onChange }: { value?: Boundary; onC
   ptsRef.current = pts;
   const finishRef = useRef<() => void>(() => undefined);
   const [failed, setFailed] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!box.current) return;
@@ -38,6 +56,8 @@ export default function BoundaryMap({ value, onChange }: { value?: Boundary; onC
       attributionControl: { compact: true },
       style: { version: 8, sources: { sat: { type: 'raster', tiles: [ESRI], tileSize: 256, attribution: 'Imagery © Esri, Maxar, Earthstar Geographics' } }, layers: [{ id: 'sat', type: 'raster', source: 'sat' }] },
     });
+    m.on('load', () => setReady(true));
+    m.on('styledata', () => setReady(true));
     m.on('error', () => setFailed(true));
     m.on('click', (e) => {
       if (!drawingRef.current) return;
@@ -58,7 +78,7 @@ export default function BoundaryMap({ value, onChange }: { value?: Boundary; onC
 
   useEffect(() => {
     const m = map.current;
-    if (!m) return;
+    if (!m || !ready) return;
     const data: Feature = { type: 'Feature', properties: {}, geometry: pts.length > 2 ? { type: 'Polygon', coordinates: [[...pts, pts[0]]] } : { type: 'LineString', coordinates: pts } };
     const apply = () => {
       const src = m.getSource('trace') as GeoJSONSource | undefined;
@@ -68,9 +88,8 @@ export default function BoundaryMap({ value, onChange }: { value?: Boundary; onC
       m.addLayer({ id: 'line', type: 'line', source: 'trace', paint: { 'line-color': '#FF6B1A', 'line-width': 2.5 } });
       m.addLayer({ id: 'pts', type: 'circle', source: 'trace', paint: { 'circle-radius': 5, 'circle-color': '#fff', 'circle-stroke-color': '#FF6B1A', 'circle-stroke-width': 2 } });
     };
-    if (m.isStyleLoaded()) apply();
-    else m.once('load', apply);
-  }, [pts]);
+    if (ready) apply();
+  }, [pts, ready]);
 
   const mid = (p: LL[]): LL => p.reduce((a, q) => [a[0] + q[0] / p.length, a[1] + q[1] / p.length], [0, 0]);
   const local = pts.length >= 3 ? lonLatToLocal(pts, mid(pts)) : null;
@@ -80,8 +99,39 @@ export default function BoundaryMap({ value, onChange }: { value?: Boundary; onC
     onChange({ polygon: centre(ensureCCW(local)), anchor: { lon: c[0], lat: c[1] }, source: 'drawn' });
     setMsg(`Boundary set: ${fmtAcres(area(local))}`);
     setDrawing(false);
+    const lons = pts.map((p) => p[0]);
+    const lats = pts.map((p) => p[1]);
+    map.current?.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 40, duration: 400 });
   };
   finishRef.current = use;
+  // Once a boundary is set, generate the layout on it and draw it over the imagery.
+  const preview = useMemo(() => {
+    if (!value || drawing || !params || params.site.source === 'preset') return null;
+    if (area(value.polygon) > 600 * 4046.8564224) return null; // too large to preview live
+    try {
+      return generate(params);
+    } catch {
+      return null;
+    }
+  }, [value, drawing, params]);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    const empty: FeatureCollection = { type: 'FeatureCollection', features: [] };
+    const data = preview && value ? layoutGeo(preview, value.anchor) : empty;
+    const apply = () => {
+      const src = m.getSource('preview') as GeoJSONSource | undefined;
+      if (src) return src.setData(data);
+      m.addSource('preview', { type: 'geojson', data });
+      m.addLayer({ id: 'pv-road', type: 'fill', source: 'preview', filter: ['==', ['get', 'kind'], 'road'], paint: { 'fill-color': '#2b2f36', 'fill-opacity': 0.6 } });
+      m.addLayer({ id: 'pv-open', type: 'fill', source: 'preview', filter: ['==', ['get', 'kind'], 'open'], paint: { 'fill-color': '#3e9b4f', 'fill-opacity': 0.7 } });
+      m.addLayer({ id: 'pv-plot', type: 'fill', source: 'preview', filter: ['==', ['get', 'kind'], 'plot'], paint: { 'fill-color': '#f2b632', 'fill-opacity': 0.55 } });
+      m.addLayer({ id: 'pv-line', type: 'line', source: 'preview', filter: ['==', ['get', 'kind'], 'plot'], paint: { 'line-color': '#ffffff', 'line-width': 0.8 } });
+      if (m.getLayer('line')) m.moveLayer('line');
+    };
+    if (ready) apply();
+  }, [preview, value, ready]);
+
   useEffect(() => {
     const c = map.current?.getCanvas();
     if (c) c.style.cursor = drawing ? 'crosshair' : '';
@@ -165,6 +215,19 @@ export default function BoundaryMap({ value, onChange }: { value?: Boundary; onC
             </button>
           )}
         </div>
+        {!drawing && value && (
+          <div className="absolute right-2 bottom-2 z-10 max-w-[320px] rounded-[6px] bg-white p-3 text-[12.5px] text-black shadow-lg" role="status">
+            <div className="text-[13.5px] font-semibold text-green-700">✓ Boundary saved</div>
+            <div className="mt-1">
+              {fmtAcres(area(value.polygon))} traced
+              {preview ? ` · ${preview.plots.length} plots fit (${((preview.plotted / preview.gross) * 100).toFixed(0)}% saleable)` : ''}
+            </div>
+            {titleAcres && titleAcres > 0 && Math.abs(area(value.polygon) / 4046.8564224 - titleAcres) / titleAcres > 0.02 && (
+              <div className="mt-1 text-amber-700">Differs from the title extent ({titleAcres.toFixed(2)} ac) by more than 2%. Check the corners or the title.</div>
+            )}
+            <div className="mt-1.5 text-[11.5px] text-neutral-600">Yellow = plots, green = open space, grey = roads. Press Continue below to set rates, then Generate.</div>
+          </div>
+        )}
         {drawing && (
           <div className="pointer-events-none absolute bottom-2 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/70 px-4 py-1.5 text-center text-[12px] text-white">
             {pts.length === 0 ? 'Zoom to your land, then click its first corner' : pts.length < 3 ? `Corner ${pts.length} placed — click the next corner` : 'Keep clicking corners. Click the first corner, double-click, or press Finish to close'}
