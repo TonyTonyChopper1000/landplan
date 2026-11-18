@@ -94,6 +94,7 @@ export function Landing() {
             <a href="#product" className="hover:text-lane">Product</a>
             <a href="#types" className="hover:text-lane">Project types</a>
             <a href="#rules" className="hover:text-lane">Rules</a>
+            <a {...link('/docs')} className="hover:text-lane">Docs</a>
           </nav>
           <div className="flex-1" />
           <button type="button" onClick={toggleTheme} aria-label="Toggle theme" className="rounded-full p-2 text-lane-dim hover:text-lane">
@@ -315,9 +316,14 @@ export function Landing() {
         <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-3 px-4 py-6 text-[11.5px] text-lane-dim md:px-6">
           <Wordmark />
           <span>Yield study only — not a submission drawing. Rules change by GO; verify against the current text.</span>
-          <a href="/v1/docs" className="hover:text-lane">
-            API docs
-          </a>
+          <span className="flex gap-4">
+            <a {...link('/docs')} className="hover:text-lane">
+              User guide
+            </a>
+            <a href="/v1/docs" className="hover:text-lane">
+              API docs
+            </a>
+          </span>
         </div>
       </footer>
     </div>

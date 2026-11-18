@@ -7,6 +7,7 @@ import { Workspace } from './App';
 
 const Landing = lazy(() => import('./features/landing/Landing').then((m) => ({ default: m.Landing })));
 const ProjectsPage = lazy(() => import('./features/projects/ProjectsPage').then((m) => ({ default: m.ProjectsPage })));
+const DocsPage = lazy(() => import('./features/docs/DocsPage').then((m) => ({ default: m.DocsPage })));
 const NewProject = lazy(() => import('./features/projects/NewProject').then((m) => ({ default: m.NewProject })));
 
 function Root() {
@@ -17,7 +18,7 @@ function Root() {
   }, [theme]);
   useEffect(() => {
     document.title =
-      route.name === 'landing' ? 'LandPlan Studio — plotted layouts in one click' : route.name === 'projects' ? 'Projects · LandPlan Studio' : route.name === 'new' ? 'New project · LandPlan Studio' : 'LandPlan Studio';
+      route.name === 'landing' ? 'LandPlan Studio — plotted layouts in one click' : route.name === 'projects' ? 'Projects · LandPlan Studio' : route.name === 'new' ? 'New project · LandPlan Studio' : route.name === 'docs' ? 'Docs · LandPlan Studio' : 'LandPlan Studio';
   }, [route.name]);
   const fallback = <div className="drafting-grid h-full" />;
   return (
@@ -27,6 +28,7 @@ function Root() {
       {route.name === 'new' && <NewProject />}
       {route.name === 'workspace' && <Workspace key={route.id} projectId={route.id} />}
       {route.name === 'scratch' && <Workspace key="scratch" />}
+      {route.name === 'docs' && <DocsPage section={route.section} />}
     </Suspense>
   );
 }

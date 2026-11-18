@@ -109,6 +109,11 @@ export function TopBar() {
       <span className="hidden md:contents"><Button variant="ghost" onClick={() => useUi.setState({ palette: true })} title="Command palette (⌘K)">
         <span className="mono text-[11px]">⌘K</span>
       </Button></span>
+      <span className="hidden md:contents">
+        <a {...link('/docs')} title="How to use (docs)" aria-label="How to use (docs)" className="inline-flex h-8 items-center justify-center rounded-[4px] px-2.5 text-[13px] text-lane-dim hover:bg-asphalt-3 hover:text-lane">
+          ?
+        </a>
+      </span>
       <Button variant="ghost" onClick={() => useUi.setState({ drawer: 'assistant' })} title={t('top.assistant')}>
         <Icon name="chat" />
       </Button>
