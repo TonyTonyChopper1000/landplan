@@ -1,5 +1,5 @@
 // Sales-viewer overlay: editorial title, light panel, cameras, Find-a-plot, Refine sheet,
-// plot card, mobile-first toolbar, sheets, WhatsApp, compass, legend and attributions.
+// plot card, mobile-first toolbar, sheets, compass, legend and attributions.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { runChecks, tally } from '@/engine/checks';
 import { plotPrice } from '@/engine/finance';
@@ -8,14 +8,14 @@ import { area as fmtArea, money } from '@/lib/format';
 import { TYPE_INFO, type ProjectDetails } from '@/features/projects/types';
 import { useUi } from '@/state/ui';
 import { useWorkspace } from '@/state/workspace';
-import { istDate } from '../../sun';
+import { istDate, sunPosition } from '../../sun';
 import type { Built } from '../build';
 import { defaultRoadName } from '../kit/ctx';
 import { filterActive, matches, statusOf } from '../Plots';
 import { useSun } from '../Stage';
 import { walkInput } from '../Cameras';
 import type { RenderProps } from '../RenderView';
-import { EMPTY_FILTER, PRESET_MINUTES, STATUS_COLOURS, STATUS_LABEL, todayDoy, useRender, type CameraMode, type Filter, type LightPreset, type Sheet } from '../store';
+import { EMPTY_FILTER, presetMinutes, STATUS_COLOURS, STATUS_LABEL, todayDoy, useRender, type CameraMode, type Filter, type LightPreset, type Sheet } from '../store';
 import { ESRI_ATTRIBUTION } from '../context/Ground';
 import { googleAttribution } from '../context/GoogleTiles';
 import { brochure, captureStill, download, recordFilm, stampLine, type StampInfo } from './exports';
@@ -84,10 +84,6 @@ export function Overlay({
   const subtitle = [TYPE_INFO[ctx.type].title, d.village || d.location, d.authority].filter(Boolean).join(' · ');
   const brand = d.brandColour && /^#[0-9a-f]{6}$/i.test(d.brandColour) ? d.brandColour : undefined;
   const shareBase = props.projectId ? `${window.location.origin}/view/${props.projectId}` : '';
-  const wa = (no?: number) => {
-    const text = no ? `Hi, I'm interested in plot ${no} at ${props.name}.${shareBase ? ` ${shareBase}?plot=${no}` : ''}` : `Hi, I'd like to know more about ${props.name}.${shareBase ? ` ${shareBase}` : ''}`;
-    return `https://wa.me/${(d.developerWhatsApp ?? '').replace(/\D/g, '')}?text=${encodeURIComponent(text)}`;
-  };
   const [toast, setToast] = useState<string | null>(null);
   const say = (t: string) => {
     setToast(t);
@@ -105,7 +101,7 @@ export function Overlay({
     }
   };
 
-  const setPreset = (p: Exclude<LightPreset, 'custom'>) => s.set({ preset: p, minutes: PRESET_MINUTES[p] });
+  const setPreset = (p: Exclude<LightPreset, 'custom'>) => s.set({ preset: p, minutes: presetMinutes(p, s.day, (dd, mm) => sunPosition(istDate(dd, mm), lat, lon).elevation) });
   const sheet = (x: Sheet) => s.set({ sheet: s.sheet === x ? null : x });
   const find = (raw: string) => {
     const no = Number(raw.replace(/\D/g, ''));
@@ -246,12 +242,6 @@ export function Overlay({
         </div>
       </div>
 
-      {/* WhatsApp */}
-      <a className="rv-wa" href={wa(sel?.no)} target="_blank" rel="noreferrer" aria-label="Enquire on WhatsApp">
-        <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden>
-          <path fill="#fff" d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3zm0 23.6c-2 0-4-.6-5.7-1.6l-.4-.2-3.9 1 1-3.8-.3-.4A10.6 10.6 0 1 1 16 26.6zm5.8-7.9c-.3-.2-1.9-.9-2.2-1s-.5-.2-.7.2l-1 1.2c-.2.2-.4.2-.7.1a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5.9-1.7.1-.2 0-.4 0-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.3 5.2 4.6 1.9.8 2.7.9 3.6.7.6-.1 1.9-.8 2.1-1.5.3-.7.3-1.3.2-1.5l-.4-.4z" />
-        </svg>
-      </a>
 
       {/* Attribution */}
       {attribution && (
@@ -307,9 +297,6 @@ export function Overlay({
                   </div>
                 </dl>
                 <div className="rv-card-actions">
-                  <a className="rv-cta wa" href={wa(sel.no)} target="_blank" rel="noreferrer">
-                    Enquire on WhatsApp
-                  </a>
                   <button
                     className="rv-chip"
                     onClick={() => {
@@ -610,10 +597,6 @@ function InfoSheet({ built, props }: { built: Built; props: RenderProps }) {
       </div>
       {editable && (
         <Group label="Sales viewer settings">
-          <label className="rv-copy">
-            <span>Developer WhatsApp</span>
-            <input defaultValue={d.developerWhatsApp ?? ''} placeholder="919876543210" inputMode="tel" onBlur={(e) => patch({ developerWhatsApp: e.target.value.replace(/\D/g, '').slice(0, 15) })} />
-          </label>
           <label className="rv-copy">
             <span>LP number</span>
             <input defaultValue={d.lpNumber ?? ''} onBlur={(e) => patch({ lpNumber: e.target.value.slice(0, 60) })} />

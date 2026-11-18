@@ -223,7 +223,7 @@ export function buildLamps(lamps: Lamp[], mats: Mats, tex: Textures): { group: T
     haloPos.set([t.x, t.y - 0.25, t.z], i * 3);
     o.position.set(t.x, 0.2, t.z);
     o.rotation.set(0, 0, 0);
-    o.scale.setScalar(l.h >= 5 ? l.h * 2.4 : 6);
+    o.scale.setScalar(l.h >= 5 ? l.h * 1.7 : 5);
     o.updateMatrix();
     pools.setMatrixAt(i, o.matrix);
   });

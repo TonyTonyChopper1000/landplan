@@ -3,6 +3,9 @@ import type { Authority, Params, PlotSize, PresetId } from '@/engine/types';
 
 export type ProjectType = 'plots' | 'villas' | 'farm';
 
+/** Real land boundary chosen in the wizard: local metres centred on `anchor`. */
+export type Boundary = { polygon: { x: number; y: number }[]; anchor: { lat: number; lon: number }; source: 'drawn' | 'import'; located?: boolean };
+
 export type ProjectDetails = {
   location: string;
   village: string;
@@ -22,10 +25,10 @@ export type ProjectDetails = {
   clubhouse?: boolean;
   plantation?: string;
   // sales viewer (optional)
-  /** Developer's WhatsApp number in international format, digits only (e.g. 919876543210). */
-  developerWhatsApp?: string;
   /** Accent colour for the public viewer, e.g. #C8102E. */
   brandColour?: string;
+  /** Traced or imported land boundary; absent = standard shape. */
+  boundary?: Boundary;
   /** HMDA / DTCP layout permission number once approved; stamped on exports. */
   lpNumber?: string;
 };
@@ -129,6 +132,7 @@ export function paramsFor(type: ProjectType, name: string, d: ProjectDetails): P
       approachMP: d.approachMP,
       recordAcres: d.acres,
       recordGuntas: d.guntas,
+      ...(d.boundary ? { source: d.boundary.source, polygon: d.boundary.polygon, anchor: d.boundary.anchor, bearings: [] } : {}),
     },
     money: { ...p.money, baseRate: d.baseRate, devCost: d.devCost, landCost: d.landCostPerAcre },
   };

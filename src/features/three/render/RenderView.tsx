@@ -2,6 +2,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { istDate, sunPosition } from '../sun';
 import type { Layout } from '@/engine/types';
 import type { ProjectDetails, ProjectType } from '@/features/projects/types';
 import { useUi } from '@/state/ui';
@@ -13,7 +14,7 @@ import { Effects, Stage, useSun } from './Stage';
 import { EsriGround, ProceduralGround } from './context/Ground';
 import { Overlay } from './ui/Overlay';
 import { registry } from './ui/registry';
-import { detectQuality, PRESET_MINUTES, todayDoy, useRender, type ContextMode } from './store';
+import { detectQuality, PRESET_MINUTES, presetMinutes, todayDoy, useRender, type ContextMode } from './store';
 import './render.css';
 
 const GoogleTiles = lazy(() => import('./context/GoogleTiles'));
@@ -33,7 +34,9 @@ export type RenderProps = {
 const GOOGLE_KEY = (import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined) ?? '';
 
 export function isGeoreferenced(layout: Layout) {
-  return layout.params.site.source === 'drawn' || layout.params.site.source === 'import';
+  const s = layout.params.site;
+  // A DXF import has no location: its anchor stays at the default, so it is not georeferenced.
+  return s.source === 'drawn' || (s.source === 'import' && !(s.anchor.lat === 17.385 && s.anchor.lon === 78.4867));
 }
 
 function Heading() {
@@ -128,9 +131,10 @@ export default function RenderView(props: RenderProps) {
     const qq = q.get('quality');
     if (qq === 'mobile' || qq === 'high' || qq === 'ultra') set({ quality: qq });
     const t = q.get('light');
-    if (t === 'morning' || t === 'noon' || t === 'golden' || t === 'night') set({ preset: t, minutes: PRESET_MINUTES[t] });
+    if (t === 'morning' || t === 'noon' || t === 'golden' || t === 'night') set({ preset: t, minutes: presetMinutes(t, todayDoy(), (dd, mm) => sunPosition(istDate(dd, mm), lat, lon).elevation) });
     const cam = q.get('camera');
     if (cam === 'plan' || cam === 'walk' || cam === 'aerial') set({ camera: cam });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout, set]);
 
   useEffect(() => {

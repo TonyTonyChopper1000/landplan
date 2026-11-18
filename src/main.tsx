@@ -8,6 +8,7 @@ import { Workspace } from './App';
 const Landing = lazy(() => import('./features/landing/Landing').then((m) => ({ default: m.Landing })));
 const ProjectsPage = lazy(() => import('./features/projects/ProjectsPage').then((m) => ({ default: m.ProjectsPage })));
 const DocsPage = lazy(() => import('./features/docs/DocsPage').then((m) => ({ default: m.DocsPage })));
+const ViewerPage = lazy(() => import('./features/three/render/ViewerPage').then((m) => ({ default: m.ViewerPage })));
 const NewProject = lazy(() => import('./features/projects/NewProject').then((m) => ({ default: m.NewProject })));
 
 function Root() {
@@ -29,6 +30,7 @@ function Root() {
       {route.name === 'workspace' && <Workspace key={route.id} projectId={route.id} />}
       {route.name === 'scratch' && <Workspace key="scratch" />}
       {route.name === 'docs' && <DocsPage section={route.section} />}
+      {route.name === 'view' && <ViewerPage key={route.id} id={route.id} />}
     </Suspense>
   );
 }
