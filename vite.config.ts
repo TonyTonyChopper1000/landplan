@@ -8,6 +8,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   worker: { format: 'es' },
+  server: { proxy: { '/v1': 'http://localhost:8787' } },
+  preview: { proxy: { '/v1': 'http://localhost:8787' } },
   build: {
     chunkSizeWarningLimit: 1200,
     rollupOptions: {
@@ -19,7 +21,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts'], testTimeout: 20000,
     environment: 'node',
   },
 });

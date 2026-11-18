@@ -4,6 +4,7 @@ import type { AreaLine, Layout } from './types';
 
 /** Approach-road widening give-up: half the shortfall to master-plan width along the south-most edge. */
 export function approachGiveUp(prep: Prepared): number {
+  if (prep.robust) return prep.mpArea;
   const s = prep.params.site;
   const short = Math.max(0, s.approachMP - s.approachExisting) / 2;
   if (!short) return 0;
@@ -44,6 +45,7 @@ export function areaStatement(
     ];
     layout.areaLines = lines;
     layout.netLayout = layout.gross;
+    assertAreaBalance(layout);
     return;
   }
   const insetA = regionArea(prep.inset);
@@ -55,7 +57,8 @@ export function areaStatement(
     { key: 'plots', label: 'Plots', m2: layout.plotted },
     { key: 'roads', label: 'Internal roads', m2: devA - extra.fragments },
     { key: 'splays', label: 'Junction splays', m2: extra.splayArea },
-    { key: 'boundary', label: 'Boundary road', m2: layout.gross - insetA },
+    { key: 'boundary', label: 'Boundary road', m2: regionArea(prep.base) - insetA },
+    { key: 'mpGiveUp', label: 'Master-plan road give-up', m2: prep.mpArea },
     { key: 'park', label: 'Parks / green', m2: park },
     { key: 'util', label: 'Utilities', m2: util },
     { key: 'social', label: 'Social infrastructure', m2: social },
@@ -68,6 +71,20 @@ export function areaStatement(
   ];
   layout.areaLines = lines;
   layout.netLayout = netLayoutArea(prep);
+  assertAreaBalance(layout);
+}
+
+export class AreaBalanceError extends Error {
+  constructor(public gross: number, public sum: number) {
+    super(`Area statement does not balance: lines sum to ${sum.toFixed(2)} m² vs gross ${gross.toFixed(2)} m²`);
+    this.name = 'AreaBalanceError';
+  }
+}
+
+/** Every line together must equal gross within 0.01%; never return an unbalanced result. */
+export function assertAreaBalance(layout: Layout): void {
+  const sum = layout.areaLines.reduce((s, l) => s + l.m2, 0);
+  if (Math.abs(sum - layout.gross) > layout.gross * 1e-4) throw new AreaBalanceError(layout.gross, sum);
 }
 
 export function line(layout: Layout, key: string): number {

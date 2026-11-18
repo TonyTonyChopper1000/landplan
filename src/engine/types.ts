@@ -36,6 +36,11 @@ export type Params = {
     polygon: Pt[] | null;
     bearings: { bearing: number; distance: number }[];
     anchor: { lat: number; lon: number };
+    /** Index of the parcel edge on the approach road (null = south-most edge). */
+    approachEdge: number | null;
+    /** Record area from title documents, acres + guntas (0 = not given). */
+    recordAcres: number;
+    recordGuntas: number;
     projectName: string;
     surveyNos: string;
     revision: string;
@@ -49,6 +54,9 @@ export type Params = {
     minPlotM2: number;
     minWidth: number;
     mixedDepths: boolean;
+    /** v1 cycling widths, or v2 dynamic-programming row packing. */
+    packing: 'cycle' | 'dp';
+    numbering: 'v1' | 'serpentine';
   };
   roads: { frontage: number; spine: number; boundary: number; splays: boolean; hierarchy: boolean };
   open: {
@@ -74,6 +82,9 @@ export type Params = {
     premiums: Record<Dir8, number>;
     corner: number;
     irregular: number;
+    mortPolicy: 'highest' | 'contiguous' | 'lowest-value';
+    roadCostPerM: number;
+    openCostPerM2: number;
   };
   grid: { theta: number; blockLenFactor: number; offX: number; offY: number };
   ruleChoices: Record<string, { ruleId: string; note: string; at: string }>;
@@ -142,6 +153,7 @@ export type Layout = {
   roadRuns: RoadRun[];
   buffers: Buffer[];
   splays: Region; // world
+  mpStrip: Region; // world, master-plan road give-up
   gross: number;
   netLayout: number;
   plotted: number;

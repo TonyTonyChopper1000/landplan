@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.server.tsbuildinfo",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"]
+  },
+  "include": ["src/server", "src/engine", "src/rules", "src/schemas", "src/features/reports/planSvg.ts", "src/features/reports/dxf.ts", "scripts/*.ts"],
+  "exclude": ["src/**/__tests__"]
+}
