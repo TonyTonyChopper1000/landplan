@@ -103,11 +103,15 @@ export function startAutosave(): () => void {
   const u3 = useUi.subscribe((s, p) => {
     if (s.theme !== p.theme || s.units !== p.units) set(PREFS, { theme: s.theme, units: s.units }).catch(() => undefined);
   });
+  const u4 = useWorkspace.subscribe((s, p) => {
+    if (s.meta && p.meta && s.meta.details !== p.meta.details) schedule(400);
+  });
   const onHide = () => document.visibilityState === 'hidden' && void save();
   document.addEventListener('visibilitychange', onHide);
   return () => {
     window.clearTimeout(timer);
     u1();
+    u4();
     u2();
     u3();
     document.removeEventListener('visibilitychange', onHide);
