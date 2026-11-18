@@ -6,6 +6,7 @@ import { istDate, sunPosition } from '../sun';
 import type { Layout } from '@/engine/types';
 import type { ProjectDetails, ProjectType } from '@/features/projects/types';
 import { useUi } from '@/state/ui';
+import { useWorkspace } from '@/state/workspace';
 import { buildScene, type Built } from './build';
 import { Cameras } from './Cameras';
 import { AmenityLabels, PlotLabels, RoadLabels } from './Labels';
@@ -104,8 +105,11 @@ export default function RenderView(props: RenderProps) {
   const context = useRender((s) => s.layers.context);
   const lat = isGeoreferenced(layout) ? layout.params.site.anchor.lat : 17.385;
   const lon = isGeoreferenced(layout) ? layout.params.site.anchor.lon : 78.4867;
+  // Road names are part of the project details, so they save to the database with the project.
+  // Scratch layouts (no project) fall back to this browser.
   const roadNamesKey = `lp-roadnames-${props.projectId ?? 'scratch'}`;
   const [roadNames, setRoadNames] = useState<Record<string, string>>(() => {
+    if (details.roadNames) return details.roadNames;
     try {
       return JSON.parse(localStorage.getItem(roadNamesKey) ?? '{}');
     } catch {
@@ -172,6 +176,11 @@ export default function RenderView(props: RenderProps) {
   const renameRoad = (id: string, text: string) => {
     const next = { ...roadNames, [id]: text };
     setRoadNames(next);
+    const meta = useWorkspace.getState().meta;
+    if (!publicView && meta && meta.id === props.projectId) {
+      useWorkspace.setState({ meta: { ...meta, details: { ...meta.details, roadNames: next } } });
+      return;
+    }
     try {
       localStorage.setItem(roadNamesKey, JSON.stringify(next));
     } catch {
