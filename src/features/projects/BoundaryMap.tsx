@@ -8,6 +8,7 @@ import { difference, union } from '@/engine/clip';
 import type { Params, Layout } from '@/engine/types';
 import type { Region } from '@/engine/geometry';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import '@/lib/maplibre';
 import { centre } from '@/engine/parcel';
 import { area, ensureCCW, type Pt } from '@/engine/geometry';
 import { lonLatToLocal, localToLonLat } from '@/lib/geo';

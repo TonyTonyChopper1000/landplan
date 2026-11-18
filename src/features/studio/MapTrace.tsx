@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Map as MlMap, type GeoJSONSource } from 'maplibre-gl';
 import type { Feature } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import '@/lib/maplibre';
 import { useProject, setSection } from '@/state/project';
 import { useUi } from '@/state/ui';
 import { centre } from '@/engine/parcel';
