@@ -29,7 +29,8 @@ npm run dev:api
 npm run dev
 ```
 
-Open http://localhost:5173. The Vite dev server proxies `/v1/*` to the API on port 8787. The app also
+Open http://localhost:5173 for the landing page, `/projects` for your projects, `/projects/new` to create
+one, or `/studio` for a scratch studio. The Vite dev server proxies `/v1/*` to the API on port 8787. The app also
 works without the API: everything except server-side optimization of large sites runs in the browser.
 
 ## Scripts
@@ -57,7 +58,8 @@ which writes the static app and one Node.js function (serving every `/v1/*` rout
    `vercel.json` supplies the install and build commands.
 3. Optional but recommended: add a Postgres database (for example **Neon** from the Vercel Marketplace)
    so projects, scenarios, optimize jobs and the layout cache persist. Vercel sets `DATABASE_URL`.
-   Then run the migrations once from your machine:
+   The API creates its tables automatically on the first request. To create them up front (and the
+   optional PostGIS tables) you can still run the migrations from your machine:
 
    ```bash
    DATABASE_URL="postgres://…" npm run db:migrate

@@ -1,5 +1,11 @@
 # Changelog
 
+## Pages, project types and Neon sync
+- Landing page, projects list, new-project wizard with Generate (live preview), project Overview dashboard.
+- Project types: residential plots, gated villa community, farm plots — each with its own defaults and details.
+- Projects and scenarios sync to Postgres/Neon through the API (browser storage fallback); automatic schema creation.
+- Node 22 runtime for the Vercel function.
+
 ## Backend for Vercel + engine v2 stages
 - API `/v1` (generate, optimize jobs + SSE, parcels import, rules, projects/scenarios, exports, benchmarks, OpenAPI).
 - Postgres storage via `DATABASE_URL`, migrations and rules seed; in-memory fallback.

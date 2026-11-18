@@ -3,7 +3,7 @@ import { PROFILES, rulesFor } from '../rules/profiles';
 import { intake, SiteError, type SiteInput } from '../engine/site';
 import { AreaBalanceError } from '../engine/areas';
 import { generate } from '../engine/layout';
-import { GenerateRequestSchema, ExportRequestSchema, ImportRequestSchema, OptimizeRequestSchema } from '../schemas';
+import { GenerateRequestSchema, ExportRequestSchema, ImportRequestSchema, OptimizeRequestSchema, ProjectCreateSchema, ProjectPatchSchema } from '../schemas';
 import type { Authority } from '../engine/types';
 import { Problem, json, type Req, type Res } from './http';
 import { authenticate, rateLimit } from './auth';
@@ -181,18 +181,28 @@ const routes: [string, RegExp, Handler][] = [
   }],
   ['GET', /^\/projects$/, async () => json(200, await (await getStorage()).listProjects())],
   ['POST', /^\/projects$/, async (req) => {
-    const name = String((req.body as { name?: unknown })?.name ?? 'Untitled project').slice(0, 200);
+    const b = parse(ProjectCreateSchema, req.body);
     const t = now();
-    return json(201, await (await getStorage()).createProject({ id: id('prj'), name, createdAt: t, updatedAt: t }));
+    const s = await getStorage();
+    // Validate the first scenario before writing anything, so a bad request leaves no orphan project.
+    const scenarioParams = b.scenario ? resolveParams(b.scenario.params) : null;
+    const p = await s.createProject({ id: b.id ?? id('prj'), name: b.name, type: b.type, details: b.details, summary: b.summary ?? null, activeScenario: null, createdAt: t, updatedAt: t });
+    if (b.scenario && scenarioParams) {
+      const sc = await s.upsertScenario({ id: b.scenario.id ?? id('scn'), projectId: p.id, name: b.scenario.name, params: scenarioParams, createdAt: t, updatedAt: t });
+      return json(201, { ...(await s.updateProject(p.id, { activeScenario: sc.id })), scenarios: [sc] });
+    }
+    return json(201, p);
   }],
-  ['GET', /^\/projects\/([\w-]+)$/, async (_req, m) => {
+  ['GET', /^\/projects\/([\w-]+)$/, async (req, m) => {
     const s = await getStorage();
     const p = await s.getProject(m[1]);
     if (!p) throw new Problem(404, 'Project not found');
-    return json(200, { ...p, scenarios: (await s.listScenarios(p.id)).map(({ params: _p, ...x }) => (void _p, x)) });
+    const full = req.query.get('include') === 'params';
+    return json(200, { ...p, scenarios: (await s.listScenarios(p.id)).map(({ params, ...x }) => (full ? { ...x, params } : x)) });
   }],
   ['PATCH', /^\/projects\/([\w-]+)$/, async (req, m) => {
-    const p = await (await getStorage()).updateProject(m[1], String((req.body as { name?: unknown })?.name ?? '').slice(0, 200) || 'Untitled project');
+    const b = parse(ProjectPatchSchema, req.body);
+    const p = await (await getStorage()).updateProject(m[1], b);
     if (!p) throw new Problem(404, 'Project not found');
     return json(200, p);
   }],
@@ -214,11 +224,16 @@ const routes: [string, RegExp, Handler][] = [
     return json(200, sc);
   }],
   ['PUT', /^\/projects\/([\w-]+)\/scenarios\/([\w-]+)$/, async (req, m) => {
+    // Upsert: the web app creates scenario ids client-side.
     const s = await getStorage();
+    if (!(await s.getProject(m[1]))) throw new Problem(404, 'Project not found');
     const sc = await s.getScenario(m[2]);
-    if (!sc || sc.projectId !== m[1]) throw new Problem(404, 'Scenario not found');
+    if (sc && sc.projectId !== m[1]) throw new Problem(409, 'Scenario belongs to another project');
     const b = (req.body ?? {}) as { name?: unknown; params?: unknown };
-    return json(200, await s.upsertScenario({ ...sc, name: b.name ? String(b.name).slice(0, 200) : sc.name, params: b.params ? resolveParams(b.params) : sc.params, updatedAt: now() }));
+    const t = now();
+    const params = b.params ? resolveParams(b.params) : sc?.params ?? resolveParams({});
+    const out = await s.upsertScenario({ id: m[2], projectId: m[1], name: b.name ? String(b.name).slice(0, 200) : sc?.name ?? 'Scenario', params, createdAt: sc?.createdAt ?? t, updatedAt: t });
+    return json(sc ? 200 : 201, out);
   }],
   ['DELETE', /^\/projects\/([\w-]+)\/scenarios\/([\w-]+)$/, async (_req, m) => {
     if (!(await (await getStorage()).deleteScenario(m[2]))) throw new Problem(404, 'Scenario not found');

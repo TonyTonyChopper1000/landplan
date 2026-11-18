@@ -9,6 +9,8 @@ import { Icon } from '@/components/ui/Icon';
 import { useMedia } from '@/lib/useMedia';
 import { t } from '@/i18n';
 import { ComplianceRing } from './ComplianceRing';
+import { useWorkspace } from '@/state/workspace';
+import { link } from '@/router';
 import { ScenarioSwitcher } from './ScenarioSwitcher';
 
 function Logo() {
@@ -21,7 +23,10 @@ function Logo() {
   );
 }
 
-export function TopBar({ savedAt }: { savedAt: number | null }) {
+export function TopBar() {
+  const saving = useWorkspace((s) => s.saving);
+  const backend = useWorkspace((s) => s.backend);
+  const hasProject = useWorkspace((s) => !!s.meta);
   const name = useProject((s) => s.params.site.projectName);
   const authority = useProject((s) => s.params.site.authority);
   const mode = useProject((s) => s.params.mode);
@@ -31,7 +36,12 @@ export function TopBar({ savedAt }: { savedAt: number | null }) {
   const md = useMedia('(min-width: 768px)');
   return (
     <header className="flex h-12 items-center gap-2 border-b border-line bg-asphalt-2 px-3">
-      <span className="hidden sm:block"><Logo /></span>
+      <a {...link(hasProject ? '/projects' : '/')} title={hasProject ? 'All projects' : 'Home'} aria-label={hasProject ? 'All projects' : 'Home'} className="flex items-center gap-1 rounded-[4px] p-1 hover:bg-asphalt-3">
+        {hasProject && <Icon name="chevron" size={12} className="rotate-180 text-lane-dim" />}
+        <span className="hidden sm:block">
+          <Logo />
+        </span>
+      </a>
       <div className="flex min-w-0 flex-col leading-tight">
         <input
           aria-label="Project name"
@@ -41,7 +51,10 @@ export function TopBar({ savedAt }: { savedAt: number | null }) {
         />
         <span className="caps hidden px-1 text-[10px] text-lane-dim md:block">
           {mode === 'rules' ? 'Rule-aware · GO 105' : 'v1 parity engine'}
-          {savedAt && <span className="ml-1 normal-case">· saved</span>}
+          <span className="ml-1 normal-case">
+            · {backend === 'cloud' ? 'Neon cloud' : 'this browser'}
+            {saving === 'saving' ? ' · saving…' : saving === 'saved' ? ' · saved' : saving === 'error' ? ' · save failed' : ''}
+          </span>
         </span>
       </div>
       {md && (

@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import type { Highlight } from '@/engine/checks';
 import type { Units } from '@/lib/format';
 
-export type Tab = 'studio' | '3d' | 'schedule' | 'feasibility' | 'financials' | 'regulations' | 'compare';
-export const TABS: Tab[] = ['studio', '3d', 'schedule', 'feasibility', 'financials', 'regulations', 'compare'];
+export type Tab = 'overview' | 'studio' | '3d' | 'schedule' | 'feasibility' | 'financials' | 'regulations' | 'compare';
+export const TABS: Tab[] = ['overview', 'studio', '3d', 'schedule', 'feasibility', 'financials', 'regulations', 'compare'];
 export type PanelId = 'site' | 'constraints' | 'plots' | 'roads' | 'open' | 'built' | 'money';
 export type Tool = 'select' | 'lasso' | 'parcel' | 'lake' | 'nala' | 'ht' | 'rail' | 'heritage';
 

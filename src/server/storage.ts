@@ -1,7 +1,19 @@
 // Storage port: in-memory (default) or Postgres when DATABASE_URL is set (Neon / Vercel Postgres / RDS).
 import type { Params } from '../engine/types';
+import { AUTO_MIGRATIONS } from './schema';
 
-export type Project = { id: string; name: string; createdAt: string; updatedAt: string };
+export type ProjectType = 'plots' | 'villas' | 'farm';
+export type Project = {
+  id: string;
+  name: string;
+  type: ProjectType;
+  details: Record<string, unknown>;
+  summary: Record<string, unknown> | null;
+  activeScenario: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+export type ProjectPatch = Partial<Pick<Project, 'name' | 'type' | 'details' | 'summary' | 'activeScenario'>>;
 export type Scenario = { id: string; projectId: string; name: string; params: Params; createdAt: string; updatedAt: string };
 export type Job = {
   id: string;
@@ -20,7 +32,7 @@ export interface Storage {
   listProjects(): Promise<Project[]>;
   getProject(id: string): Promise<Project | null>;
   createProject(p: Project): Promise<Project>;
-  updateProject(id: string, name: string): Promise<Project | null>;
+  updateProject(id: string, patch: ProjectPatch): Promise<Project | null>;
   deleteProject(id: string): Promise<boolean>;
   listScenarios(projectId: string): Promise<Scenario[]>;
   getScenario(id: string): Promise<Scenario | null>;
@@ -48,10 +60,10 @@ export class MemoryStorage implements Storage {
     this.projects.set(p.id, p);
     return p;
   }
-  async updateProject(id: string, name: string) {
+  async updateProject(id: string, patch: ProjectPatch) {
     const p = this.projects.get(id);
     if (!p) return null;
-    const n = { ...p, name, updatedAt: new Date().toISOString() };
+    const n = { ...p, ...patch, updatedAt: new Date().toISOString() };
     this.projects.set(id, n);
     return n;
   }
@@ -95,21 +107,39 @@ export class PostgresStorage implements Storage {
   static async connect(url: string): Promise<PostgresStorage> {
     const { default: postgres } = await import('postgres');
     const sql = postgres(url, { max: 3, idle_timeout: 20, prepare: false, onnotice: () => undefined, ssl: /localhost|127\.0\.0\.1/.test(url) ? false : 'require' });
-    return new PostgresStorage(sql);
+    const store = new PostgresStorage(sql);
+    await store.migrate();
+    return store;
+  }
+
+  /** Apply the idempotent schema once per cold start, so a fresh Neon database works without a manual migration. */
+  async migrate(): Promise<void> {
+    await this.sql`create table if not exists schema_migrations (id text primary key, applied_at timestamptz not null default now())`;
+    const done = new Set((await this.sql`select id from schema_migrations`).map((r) => r.id as string));
+    for (const m of AUTO_MIGRATIONS) {
+      if (done.has(m.id)) continue;
+      await this.sql.unsafe(m.sql);
+      await this.sql`insert into schema_migrations (id) values (${m.id}) on conflict do nothing`;
+    }
   }
   async listProjects() {
-    return (await this.sql`select id, name, created_at as "createdAt", updated_at as "updatedAt" from projects order by updated_at desc limit 500`) as unknown as Project[];
+    return (await this.sql`select id, name, type, details, summary, active_scenario as "activeScenario", created_at as "createdAt", updated_at as "updatedAt" from projects order by updated_at desc limit 500`) as unknown as Project[];
   }
   async getProject(id: string) {
-    const r = await this.sql`select id, name, created_at as "createdAt", updated_at as "updatedAt" from projects where id = ${id}`;
+    const r = await this.sql`select id, name, type, details, summary, active_scenario as "activeScenario", created_at as "createdAt", updated_at as "updatedAt" from projects where id = ${id}`;
     return (r[0] as Project) ?? null;
   }
   async createProject(p: Project) {
-    await this.sql`insert into projects (id, name, created_at, updated_at) values (${p.id}, ${p.name}, ${p.createdAt}, ${p.updatedAt})`;
+    await this.sql`insert into projects (id, name, type, details, summary, active_scenario, created_at, updated_at)
+      values (${p.id}, ${p.name}, ${p.type}, ${this.sql.json(p.details as never)}, ${p.summary ? this.sql.json(p.summary as never) : null}, ${p.activeScenario}, ${p.createdAt}, ${p.updatedAt})`;
     return p;
   }
-  async updateProject(id: string, name: string) {
-    await this.sql`update projects set name = ${name}, updated_at = now() where id = ${id}`;
+  async updateProject(id: string, patch: ProjectPatch) {
+    const cur = await this.getProject(id);
+    if (!cur) return null;
+    const n = { ...cur, ...patch };
+    await this.sql`update projects set name = ${n.name}, type = ${n.type}, details = ${this.sql.json(n.details as never)},
+      summary = ${n.summary ? this.sql.json(n.summary as never) : null}, active_scenario = ${n.activeScenario}, updated_at = now() where id = ${id}`;
     return this.getProject(id);
   }
   async deleteProject(id: string) {
@@ -153,7 +183,13 @@ export class PostgresStorage implements Storage {
 
 let storage: Promise<Storage> | null = null;
 export function getStorage(env: Record<string, string | undefined> = process.env): Promise<Storage> {
-  if (!storage) storage = env.DATABASE_URL ? PostgresStorage.connect(env.DATABASE_URL) : Promise.resolve(new MemoryStorage());
+  if (!storage) {
+    const url = env.DATABASE_URL ?? env.POSTGRES_URL;
+    storage = url ? PostgresStorage.connect(url) : Promise.resolve(new MemoryStorage());
+    storage.catch(() => {
+      storage = null; // retry on the next request instead of caching a failed connection
+    });
+  }
   return storage;
 }
 export function setStorage(s: Storage) {

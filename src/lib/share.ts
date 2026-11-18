@@ -37,5 +37,5 @@ export function writeHash(p: Params): void {
 }
 
 export function shareUrl(p: Params): string {
-  return `${window.location.origin}${window.location.pathname}#s=${encodeParams(p)}`;
+  return `${window.location.origin}/studio#s=${encodeParams(p)}`;
 }

@@ -126,6 +126,29 @@ with sales velocity, price escalation and mortgage release; revenue, profit, mar
 
 ## 3. Web app
 
+### 3.0 Pages and project flow
+| Route | Page |
+| --- | --- |
+| `/` | **Landing page**: full-screen hero with live engine layouts drawing themselves behind the headline, scan-line and cursor-coordinate effects, live stats from the engine, GO-reference marquee, how-it-works, project types, cited-compliance showcase, feature grid and call to action. |
+| `/projects` | **Projects list**: cards with type, location, plots, saleable %, revenue and check status; delete; shows whether projects sync to Neon or stay in this browser. |
+| `/projects/new` | **New-project wizard**: 1) type, 2) site details (name, location, village, survey nos., authority, acres + guntas, approach roads, parcel shape), 3) rates and rules (base rate, development cost, land cost, rule-aware toggle, type-specific options), 4) **Generate** — searches 486 grid layouts in a Web Worker with a live best-so-far plan preview, then saves the project and opens its dashboard. `?type=plots|villas|farm` preselects a type. |
+| `/projects/:id` | **Project workspace** opening on the **Overview dashboard**, plus Studio, 3D, Schedule, Feasibility, Financials, Regulations and Compare. Autosaves (Neon when available). |
+| `/studio` | Scratch studio without a project (also where old share links open). |
+
+**Project types** (each sets its own defaults and its own Overview details):
+| Type | Defaults | Overview shows |
+| --- | --- | --- |
+| Residential plots | 150–400 sq yd mix, 60 ft depth, 12.2 m roads, GO 105 rules | Sellable-now vs mortgaged value, price band, corner plots, plot mix, facing, mortgaged plot ranges |
+| Gated villa community | 240–500 sq yd villas, 70 ft depth, 18 m spine, G+1/G+2, optional clubhouse parcel (1 % SI), higher east/corner premiums | Villa count, total and average built-up (sq ft), clubhouse area, premium villas, link to 3D |
+| Farm plots | 10–40 gunta plots, 220 ft depth, 9/12 m farm roads, distributed green, per-acre pricing, plantation | Plots by gunta band, price per acre, farm-road length, green cover, saleable acres/guntas, sell-out |
+
+The **Overview dashboard** (all types) also has KPI tickers, a plan preview, a land-use donut, the
+compliance ring with open issues, finance summary and project details.
+
+**Storage**: when the API reports a Postgres database (Neon), projects and scenarios are created, loaded
+and autosaved through `/v1/projects`; otherwise they are kept in this browser (IndexedDB). The top bar shows
+which ("Neon cloud" / "this browser") and the save state.
+
 ### 3.1 Shell
 - **Top bar**: editable project name, authority badge, scenario switcher (save, duplicate, rename,
   delete), **compliance ring** (verified / failing / conflict / not-checked; shakes once on a new failure),
@@ -226,7 +249,11 @@ Framework-free handler in `src/server`, deployed as one Vercel Node.js function.
   cash flow, tornado, diagnostics (stage timings, warnings).
 - zod validation with **RFC 7807** problem+json errors; API-key middleware stub (`API_KEYS`);
   per-key rate limit; CORS.
-- **Storage**: in-memory by default; **Postgres** when `DATABASE_URL` is set (projects, scenarios with
+- **Projects for the web app**: `POST /projects` takes `type`, `details`, `summary` and an optional first
+  scenario (validated before anything is written); `PATCH` updates name, details, summary and active scenario;
+  `PUT /projects/:id/scenarios/:sid` upserts; `GET /projects/:id?include=params` returns full scenarios.
+- **Storage**: in-memory by default; **Postgres** when `DATABASE_URL` (or `POSTGRES_URL`) is set. Tables are
+  created automatically on first connection, so a fresh Neon database needs no manual migration (projects, scenarios with
   rule choices and overrides, runs/jobs, layout cache, versioned rule sets, benchmarks). Migrations in
   `db/migrations`, seeding via `npm run db:migrate`; optional PostGIS geometry tables.
 - **Benchmark harness** seeded with HMDA draft LP 000091/LO/Plg/HMDA/2020 (plotted 214,855 m², roads
