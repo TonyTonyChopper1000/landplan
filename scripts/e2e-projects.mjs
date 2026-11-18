@@ -29,7 +29,7 @@ page.on('pageerror', (e) => errors.push(e.message));
 await page.goto(`${BASE}/`);
 await page.waitForTimeout(800);
 ok('Landing shows hero', await page.getByRole('heading', { name: /Plot the/ }).isVisible());
-await page.getByRole('link', { name: /Start a project/ }).first().click();
+await page.getByRole('link', { name: /Generate my layout/ }).first().click();
 await page.waitForTimeout(500);
 ok('Start → wizard', page.url().endsWith('/projects/new'));
 await page.getByRole('button', { name: /Gated villa community/ }).click();

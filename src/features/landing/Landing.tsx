@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
 import { link } from '@/router';
 import { RULES, CONFLICT_GROUPS } from '@/rules/regulations';
 import { ACRE } from '@/engine/geometry';
-import type { Layout } from '@/engine/types';
+import { finance } from '@/engine/finance';
 import { Icon } from '@/components/ui/Icon';
 import { Ticker } from '@/components/ui/Ticker';
 import { useUi } from '@/state/ui';
@@ -11,12 +11,16 @@ import { toggleTheme } from '@/state/actions';
 import { TypeGlyph } from '@/features/projects/TypeGlyph';
 import { TYPE_INFO, type ProjectType } from '@/features/projects/types';
 import { Wordmark } from '@/features/projects/PageChrome';
-import { HeroPlan, useHeroLayouts } from './HeroPlan';
+import { crore } from '@/lib/format';
+import { useHeroLayouts } from './HeroPlan';
+import { IsoTable } from './IsoTable';
+import { BuildStory } from './BuildStory';
+import { Bento } from './Bento';
 
 function Reveal({ children, delay = 0, className }: { children: ReactNode; delay?: number; className?: string }) {
   const reduce = useReducedMotion();
   return (
-    <motion.div className={className} initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, delay, ease: [0.2, 0.8, 0.2, 1] }}>
+    <motion.div className={className} initial={reduce ? false : { opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.6, delay, ease: [0.2, 0.8, 0.2, 1] }}>
       {children}
     </motion.div>
   );
@@ -28,220 +32,207 @@ function Cta({ to, children, ghost }: { to: string; children: ReactNode; ghost?:
       {...link(to)}
       className={
         ghost
-          ? 'inline-flex h-12 items-center gap-2 rounded-[6px] border border-line bg-asphalt/60 px-5 text-[15px] backdrop-blur hover:border-lane-dim'
-          : 'group inline-flex h-12 items-center gap-2 rounded-[6px] bg-signal px-6 text-[15px] font-semibold text-[#140800] shadow-[0_0_0_1px_rgba(255,107,26,.6),0_10px_40px_-8px_rgba(255,107,26,.7)] transition-transform hover:-translate-y-0.5'
+          ? 'inline-flex h-13 items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-6 text-[15px] backdrop-blur-md transition-colors hover:bg-white/[0.08]'
+          : 'group relative inline-flex h-13 items-center gap-2 overflow-hidden rounded-full bg-signal px-7 text-[15px] font-semibold text-[#140800] shadow-[0_0_0_1px_rgba(255,107,26,.6),0_18px_60px_-12px_rgba(255,107,26,.85)] transition-transform hover:-translate-y-0.5'
       }
     >
-      {children}
+      {!ghost && <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 group-hover:translate-x-full" />}
+      <span className="relative flex items-center gap-2">{children}</span>
     </a>
   );
 }
 
-function Crosshair() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [p, setP] = useState<{ x: number; y: number } | null>(null);
-  useEffect(() => {
-    const el = ref.current?.parentElement;
-    if (!el) return;
-    const m = (e: PointerEvent) => {
-      const r = el.getBoundingClientRect();
-      setP({ x: e.clientX - r.left, y: e.clientY - r.top });
-    };
-    const l = () => setP(null);
-    el.addEventListener('pointermove', m);
-    el.addEventListener('pointerleave', l);
-    return () => {
-      el.removeEventListener('pointermove', m);
-      el.removeEventListener('pointerleave', l);
-    };
-  }, []);
+function Chip({ className, label, children, delay }: { className: string; label: string; children: ReactNode; delay: number }) {
+  const reduce = useReducedMotion();
   return (
-    <div ref={ref} className="pointer-events-none absolute inset-0 hidden md:block" aria-hidden>
-      {p && (
-        <>
-          <div className="absolute top-0 bottom-0 w-px bg-blueprint/25" style={{ left: p.x }} />
-          <div className="absolute right-0 left-0 h-px bg-blueprint/25" style={{ top: p.y }} />
-          <div className="mono absolute rounded-[3px] bg-asphalt/80 px-1.5 py-0.5 text-[10px] text-blueprint" style={{ left: p.x + 10, top: p.y + 10 }}>
-            E {(232957 + p.x * 0.42).toFixed(1)} · N {(1923897 - p.y * 0.42).toFixed(1)}
-          </div>
-        </>
-      )}
-    </div>
+    <motion.div
+      initial={reduce ? false : { opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay, duration: 0.5 }}
+      className={`float-y absolute hidden rounded-[14px] border border-white/10 bg-asphalt/60 px-4 py-3 shadow-2xl backdrop-blur-xl lg:block ${className}`}
+      style={{ animationDelay: `${delay}s` }}
+    >
+      <div className="caps text-[9.5px] text-lane-dim">{label}</div>
+      <div className="mt-0.5 text-[22px] leading-tight font-semibold">{children}</div>
+    </motion.div>
   );
 }
 
-const STEPS = [
-  { n: '01', t: 'Describe the land', d: 'Pick plots, villas or farm land. Enter survey numbers, extent in acres and guntas, the authority and your rates — or trace the boundary on satellite.', icon: 'site' },
-  { n: '02', t: 'Generate', d: 'The engine searches 486 grid layouts in your browser, cuts splays, carves parks and utilities, applies buffers and packs whole-foot plots.', icon: 'bolt' },
-  { n: '03', t: 'Decide', d: 'Every check cites its GO. See revenue, IRR and peak funding, compare scenarios with a swipe, and export the A3 sheet, DXF or schedule.', icon: 'shield' },
-];
-
-const FEATURES = [
-  { icon: 'cube', t: '3D massing with real sun', d: 'Villas extruded with setbacks, shadows for Hyderabad at any date and hour, and a one-click fly-through.' },
-  { icon: 'chart', t: 'Cash flow, IRR, tornado', d: 'Monthly sales against development spend and mortgage release, with sensitivity on rate, cost, velocity and mortgage.' },
-  { icon: 'map', t: 'Trace on satellite', d: 'Click the corners on imagery, import GeoJSON, KML or DXF, or type a bearings traverse — Bowditch-adjusted.' },
-  { icon: 'compare', t: 'Scenarios with a swipe', d: 'Duplicate, tweak and drag a divider across two plans while every KPI shows its delta.' },
-  { icon: 'download', t: 'Six exports', d: 'A3 drawing sheet PDF with title block, SVG, layered DXF, XLSX and CSV schedules, and GeoJSON.' },
-  { icon: 'table', t: 'Live inventory', d: 'Lasso plots on the plan, mark them held, booked or sold, override prices and watch sellable stock update.' },
-];
+function SectionHead({ kicker, title, sub }: { kicker: string; title: ReactNode; sub?: string }) {
+  return (
+    <Reveal className="max-w-[760px]">
+      <div className="caps text-[11px] text-signal">{kicker}</div>
+      <h2 className="mt-3 text-[clamp(34px,5vw,68px)] leading-[0.98] font-semibold tracking-[-0.035em]">{title}</h2>
+      {sub && <p className="mt-4 text-[16px] leading-relaxed text-lane-dim">{sub}</p>}
+    </Reveal>
+  );
+}
 
 export function Landing() {
   const layouts = useHeroLayouts();
-  const [scene, setScene] = useState<Layout>(layouts[0]);
-  const onScene = useCallback((l: Layout) => setScene(l), []);
-  const theme = useUi((s) => s.theme);
+  const [i, setI] = useState(0);
   const reduce = useReducedMotion();
+  const theme = useUi((s) => s.theme);
   const { scrollY } = useScroll();
-  const heroY = useTransform(scrollY, [0, 600], [0, reduce ? 0 : 120]);
-  const heroO = useTransform(scrollY, [0, 500], [1, 0.25]);
+  const tableY = useTransform(scrollY, [0, 800], [0, reduce ? 0 : 220]);
+  const tableO = useTransform(scrollY, [0, 700], [1, 0.15]);
+  useEffect(() => {
+    if (reduce) return;
+    const t = window.setInterval(() => setI((x) => (x + 1) % layouts.length), 6500);
+    return () => window.clearInterval(t);
+  }, [layouts.length, reduce]);
+  const scene = layouts[i];
+  const fin = finance(scene);
   const refs = [...new Set(RULES.map((r) => r.reference).filter((r) => r !== '—'))];
   return (
-    <div className="min-h-full overflow-x-hidden bg-asphalt">
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-line/60 bg-asphalt/70 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-[1240px] items-center gap-4 px-4 md:px-6">
+    <div className="min-h-full overflow-x-clip bg-asphalt">
+      <header className="fixed inset-x-0 top-0 z-50">
+        <div className="mx-auto mt-3 flex h-12 max-w-[1180px] items-center gap-4 rounded-full border border-white/10 bg-asphalt/55 px-4 shadow-2xl backdrop-blur-xl md:mx-auto max-[1220px]:mx-3">
           <Wordmark />
-          <nav className="ml-6 hidden gap-5 text-[13px] text-lane-dim md:flex">
-            <a href="#how" className="hover:text-lane">How it works</a>
+          <nav className="ml-4 hidden gap-5 text-[13px] text-lane-dim md:flex">
+            <a href="#build" className="hover:text-lane">How it works</a>
+            <a href="#product" className="hover:text-lane">Product</a>
             <a href="#types" className="hover:text-lane">Project types</a>
             <a href="#rules" className="hover:text-lane">Rules</a>
-            <a href="#features" className="hover:text-lane">Features</a>
           </nav>
           <div className="flex-1" />
-          <button type="button" onClick={toggleTheme} aria-label="Toggle theme" className="rounded-[4px] p-2 text-lane-dim hover:text-lane">
+          <button type="button" onClick={toggleTheme} aria-label="Toggle theme" className="rounded-full p-2 text-lane-dim hover:text-lane">
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
           </button>
           <a {...link('/projects')} className="hidden text-[13px] text-lane-dim hover:text-lane sm:inline">
             Projects
           </a>
-          <a {...link('/projects/new')} className="inline-flex h-9 items-center gap-1.5 rounded-[4px] bg-signal px-3.5 text-[13px] font-semibold text-[#140800]">
-            Start <Icon name="chevron" size={13} />
+          <a {...link('/projects/new')} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-lane px-3.5 text-[12.5px] font-semibold text-asphalt">
+            Start free <Icon name="chevron" size={12} />
           </a>
         </div>
       </header>
 
       {/* HERO */}
-      <section className="drafting-grid relative isolate flex min-h-[100svh] flex-col overflow-hidden pt-14">
-        <motion.div style={{ y: heroY, opacity: heroO }} className="absolute inset-0 -z-10">
-          <div className={reduce ? 'absolute inset-[-6%]' : 'drift absolute inset-[-6%]'}>
-            <div className="absolute inset-y-[8%] right-[-8%] left-[30%] max-md:inset-x-[-20%] max-md:top-[38%] max-md:bottom-[-10%]">
-              <HeroPlan layouts={layouts} onScene={onScene} />
-            </div>
-          </div>
-          {!reduce && <div className="scanline absolute inset-y-0 left-0 w-[30%] bg-[linear-gradient(90deg,transparent,rgba(63,193,217,.10)_70%,rgba(255,107,26,.55)_99%,transparent)] mix-blend-screen" />}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_45%,var(--asphalt)_25%,transparent_70%)]" />
-          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-[var(--asphalt)]" />
+      <section className="noise relative isolate flex min-h-[100svh] flex-col items-center overflow-hidden pt-28 text-center">
+        <div className="absolute inset-0 -z-20 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(63,193,217,.16),transparent_60%),radial-gradient(ellipse_60%_50%_at_50%_100%,rgba(255,107,26,.18),transparent_70%)]" />
+        <div className="drafting-grid absolute inset-0 -z-20 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_45%,black,transparent)]" />
+        <motion.div style={{ y: tableY, opacity: tableO }} className="absolute inset-x-0 top-[43%] bottom-[-38%] -z-10 max-md:top-[56%]">
+          <IsoTable layout={scene} sceneKey={i} />
         </motion.div>
-        <Crosshair />
-        <div className="mx-auto flex w-full max-w-[1240px] flex-1 flex-col justify-center px-4 py-16 md:px-6">
-          <motion.div initial={reduce ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="inline-flex w-fit items-center gap-2 rounded-full border border-blueprint/40 bg-asphalt/70 px-3 py-1 text-[12px] text-blueprint backdrop-blur">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-signal opacity-60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-signal" />
-            </span>
-            HMDA · DTCP · GO Ms 105 — Telangana
-          </motion.div>
-          <h1 className="mt-6 max-w-[14ch] text-[clamp(44px,8.4vw,112px)] leading-[0.92] font-semibold tracking-[-0.04em]">
-            <motion.span className="block" initial={reduce ? false : { opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.05 }}>
-              Plot the
-            </motion.span>
-            <motion.span className="block" initial={reduce ? false : { opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.15 }}>
-              whole site
-            </motion.span>
-            <motion.span className="sheen block" initial={reduce ? false : { opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.25 }}>
-              in one click.
-            </motion.span>
-          </h1>
-          <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }} className="mt-6 max-w-[52ch] text-[clamp(15px,1.5vw,18px)] text-lane-dim">
-            Roads, blocks, plots, parks, utilities and buffers — generated, checked against cited GOs and priced, before your surveyor has finished the boundary.
-          </motion.p>
-          <motion.div initial={reduce ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }} className="mt-8 flex flex-wrap gap-3">
-            <Cta to="/projects/new">
-              <Icon name="bolt" size={17} /> Start a project
-              <Icon name="chevron" size={14} className="transition-transform group-hover:translate-x-0.5" />
-            </Cta>
-            <Cta to="/studio" ghost>
-              <Icon name="grid" size={16} /> Open the studio
-            </Cta>
-          </motion.div>
-          <div className="mt-14 grid max-w-[720px] grid-cols-2 gap-px overflow-hidden rounded-[6px] border border-line bg-line md:grid-cols-4">
-            {[
-              { l: 'This parcel', v: scene.gross / ACRE, f: (n: number) => `${n.toFixed(1)} ac` },
-              { l: 'Plots placed', v: scene.plots.length, f: (n: number) => String(Math.round(n)) },
-              { l: 'Saleable', v: (scene.plotted / scene.gross) * 100, f: (n: number) => `${n.toFixed(1)}%` },
-              { l: 'Cited rules', v: RULES.length, f: (n: number) => String(Math.round(n)) },
-            ].map((k) => (
-              <div key={k.l} className="bg-asphalt/85 px-4 py-3 backdrop-blur">
-                <div className="caps text-[10px] text-lane-dim">{k.l}</div>
-                <div className="mt-0.5 text-[24px] font-semibold">
-                  <Ticker value={k.v} format={k.f} />
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="mono mt-3 text-[10.5px] text-lane-dim">↑ live from the layout engine running in your browser right now</p>
+        <div className="absolute inset-x-0 bottom-0 -z-10 h-56 bg-gradient-to-b from-transparent to-[var(--asphalt)]" />
+
+        <motion.a
+          {...link('/projects/new?type=villas')}
+          initial={reduce ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] py-1 pr-3 pl-1 text-[12.5px] text-lane-dim backdrop-blur-md hover:text-lane"
+        >
+          <span className="rounded-full bg-signal/15 px-2 py-0.5 text-[11px] font-semibold text-signal-ink">New</span>
+          Gated villas & farm plots, with live 3D massing
+          <Icon name="chevron" size={12} className="transition-transform group-hover:translate-x-0.5" />
+        </motion.a>
+        <h1 className="mt-7 px-4 text-[clamp(48px,10vw,148px)] leading-[0.86] font-semibold tracking-[-0.055em]">
+          <motion.span className="block" initial={reduce ? false : { opacity: 0, y: 40, filter: 'blur(12px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} transition={{ duration: 0.8, delay: 0.05 }}>
+            Plot the whole site
+          </motion.span>
+          <motion.span className="sheen block pb-2" initial={reduce ? false : { opacity: 0, y: 40, filter: 'blur(12px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} transition={{ duration: 0.8, delay: 0.2 }}>
+            in one click.
+          </motion.span>
+        </h1>
+        <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6 max-w-[56ch] px-4 text-[clamp(15px,1.6vw,19px)] leading-relaxed text-lane-dim">
+          The layout studio for Telangana ventures. Roads, plots, parks and buffers generated, checked against cited GOs and priced — before your surveyor has finished the boundary.
+        </motion.p>
+        <motion.div initial={reduce ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }} className="mt-9 flex flex-wrap justify-center gap-3 px-4">
+          <Cta to="/projects/new">
+            <Icon name="bolt" size={17} /> Generate my layout
+          </Cta>
+          <Cta to="/studio" ghost>
+            <Icon name="grid" size={16} /> Try the studio
+          </Cta>
+        </motion.div>
+        <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }} className="mono mt-5 px-4 text-[11px] text-lane-dim">
+          HMDA · DTCP · GO Ms 105<span className="hidden sm:inline"> &nbsp;·&nbsp; no sign-up &nbsp;·&nbsp; runs in your browser</span>
+        </motion.p>
+
+        <Chip className="top-[40%] left-[6%]" label="Plots on this parcel" delay={1.1}>
+          <Ticker value={scene.plots.length} format={(n) => String(Math.round(n))} />
+        </Chip>
+        <Chip className="top-[58%] left-[12%]" label="Saleable" delay={1.3}>
+          <span className="text-blueprint">
+            <Ticker value={(scene.plotted / scene.gross) * 100} format={(n) => `${n.toFixed(1)}%`} />
+          </span>
+        </Chip>
+        <Chip className="top-[42%] right-[6%]" label="Revenue at ₹32k/yd²" delay={1.2}>
+          <span className="text-signal-ink">
+            <Ticker value={fin.revenue} format={crore} />
+          </span>
+        </Chip>
+        <Chip className="top-[60%] right-[11%]" label="Extent" delay={1.4}>
+          <Ticker value={scene.gross / ACRE} format={(n) => `${n.toFixed(1)} ac`} />
+        </Chip>
+        <div className="flex-1" />
+        <div className="mono mb-6 flex items-center gap-2 text-[10.5px] text-lane-dim">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sign-green opacity-70" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-sign-green" />
+          </span>
+          live layout engine · scene {i + 1}/{layouts.length}
         </div>
       </section>
 
       {/* MARQUEE */}
-      <div className="relative overflow-hidden border-y border-line bg-asphalt-2 py-3" aria-hidden>
-        <div className={`flex w-max gap-10 whitespace-nowrap ${reduce ? '' : 'marquee'}`}>
-          {[...refs, ...refs].map((r, i) => (
-            <span key={i} className="mono text-[12px] text-lane-dim">
+      <div className="relative overflow-hidden border-y border-line bg-asphalt-2 py-4" aria-hidden>
+        <div className={`flex w-max gap-12 whitespace-nowrap ${reduce ? '' : 'marquee'}`}>
+          {[...refs, ...refs].map((r, k) => (
+            <span key={k} className="mono text-[12.5px] text-lane-dim">
               <span className="text-signal">§</span> {r}
             </span>
           ))}
         </div>
       </div>
 
-      {/* HOW */}
-      <section id="how" className="mx-auto max-w-[1240px] scroll-mt-20 px-4 py-24 md:px-6">
-        <Reveal>
-          <div className="caps text-[11px] text-blueprint">How it works</div>
-          <h2 className="mt-2 max-w-[20ch] text-[clamp(30px,4.2vw,52px)] leading-[1.02] font-semibold tracking-tight">From survey sketch to saleable inventory in three moves.</h2>
-        </Reveal>
-        <div className="mt-12 grid gap-4 md:grid-cols-3">
-          {STEPS.map((s, i) => (
-            <Reveal key={s.n} delay={i * 0.08}>
-              <div className="group relative h-full overflow-hidden rounded-[8px] border border-line bg-asphalt-2 p-6 transition-colors hover:border-blueprint/60">
-                <div className="mono text-[56px] leading-none font-semibold text-line transition-colors group-hover:text-blueprint/40">{s.n}</div>
-                <Icon name={s.icon} size={22} className="mt-4 text-signal" />
-                <h3 className="mt-3 text-[19px] font-semibold">{s.t}</h3>
-                <p className="mt-2 text-[13.5px] leading-relaxed text-lane-dim">{s.d}</p>
-              </div>
-            </Reveal>
-          ))}
+      {/* BUILD STORY */}
+      <div id="build" className="scroll-mt-20">
+        <BuildStory layout={layouts[0]} />
+      </div>
+
+      {/* BENTO */}
+      <section id="product" className="mx-auto max-w-[1240px] scroll-mt-20 px-4 py-28 md:px-6">
+        <SectionHead kicker="Product" title={<>An instrument,<br />not a dashboard template.</>} sub="Everything after the layout is computed from the same geometry — so the 3D, the money and the compliance never disagree with the plan." />
+        <div className="mt-14">
+          <Bento layout={layouts[0]} rotated={layouts[3]} />
         </div>
       </section>
 
       {/* TYPES */}
-      <section id="types" className="scroll-mt-20 border-y border-line bg-asphalt-2">
-        <div className="mx-auto max-w-[1240px] px-4 py-24 md:px-6">
-          <Reveal>
-            <div className="caps text-[11px] text-blueprint">Project types</div>
-            <h2 className="mt-2 max-w-[22ch] text-[clamp(30px,4.2vw,52px)] leading-[1.02] font-semibold tracking-tight">One engine. Three kinds of venture.</h2>
-          </Reveal>
-          <div className="mt-12 grid gap-4 md:grid-cols-3">
-            {(Object.keys(TYPE_INFO) as ProjectType[]).map((t, i) => {
+      <section id="types" className="relative scroll-mt-20 overflow-hidden border-y border-line bg-asphalt-2">
+        <div className="mx-auto max-w-[1240px] px-4 py-28 md:px-6">
+          <SectionHead kicker="Project types" title="One engine. Three kinds of venture." />
+          <div className="mt-14 grid gap-4 md:grid-cols-3">
+            {(Object.keys(TYPE_INFO) as ProjectType[]).map((t, k) => {
               const info = TYPE_INFO[t];
               return (
-                <Reveal key={t} delay={i * 0.08}>
-                  <a {...link(`/projects/new?type=${t}`)} className="group flex h-full flex-col rounded-[8px] border border-line bg-asphalt p-6 transition-all hover:-translate-y-1 hover:border-[color:var(--c)]" style={{ ['--c' as string]: info.accent }}>
-                    <TypeGlyph type={t} size={84} />
-                    <span className="caps mt-5 text-[10.5px]" style={{ color: info.accent }}>
+                <Reveal key={t} delay={k * 0.08}>
+                  <a {...link(`/projects/new?type=${t}`)} className="group noise relative flex h-full flex-col overflow-hidden rounded-[18px] border border-line bg-asphalt p-7 transition-all duration-300 hover:-translate-y-1.5" style={{ ['--c' as string]: info.accent }}>
+                    <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full opacity-25 blur-3xl transition-opacity duration-500 group-hover:opacity-60" style={{ background: info.accent }} />
+                    <div className="absolute inset-0 rounded-[18px] border border-transparent transition-colors group-hover:border-[color:var(--c)]" />
+                    <TypeGlyph type={t} size={96} />
+                    <span className="caps mt-7 text-[10.5px]" style={{ color: info.accent }}>
                       {info.tag}
                     </span>
-                    <span className="mt-1 text-[22px] font-semibold">{info.title}</span>
-                    <span className="mt-2 text-[13.5px] text-lane-dim">{info.blurb}</span>
-                    <ul className="mt-5 space-y-1.5 text-[13px]">
+                    <span className="mt-1.5 text-[26px] leading-tight font-semibold tracking-tight">{info.title}</span>
+                    <span className="mt-3 text-[14px] leading-relaxed text-lane-dim">{info.blurb}</span>
+                    <ul className="mt-6 space-y-2 text-[13.5px]">
                       {info.bullets.map((b) => (
-                        <li key={b} className="flex items-center gap-2">
-                          <Icon name="check" size={13} className="text-signal" />
+                        <li key={b} className="flex items-center gap-2.5">
+                          <span className="flex h-4 w-4 items-center justify-center rounded-full" style={{ background: `color-mix(in srgb, ${info.accent} 22%, transparent)` }}>
+                            <Icon name="check" size={10} />
+                          </span>
                           {b}
                         </li>
                       ))}
                     </ul>
-                    <span className="mt-auto pt-6 text-[13px] font-medium text-signal-ink">
-                      Start a {info.title.toLowerCase()} project <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                    <span className="mt-auto flex items-center gap-2 pt-8 text-[14px] font-semibold">
+                      Start this project
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full border border-line transition-all group-hover:border-[color:var(--c)] group-hover:bg-[color:var(--c)] group-hover:text-asphalt">
+                        <Icon name="chevron" size={13} />
+                      </span>
                     </span>
                   </a>
                 </Reveal>
@@ -252,10 +243,10 @@ export function Landing() {
       </section>
 
       {/* RULES */}
-      <section id="rules" className="mx-auto grid max-w-[1240px] scroll-mt-20 gap-12 px-4 py-24 md:grid-cols-[1fr_1.1fr] md:px-6">
+      <section id="rules" className="mx-auto grid max-w-[1240px] scroll-mt-20 gap-14 px-4 py-28 md:grid-cols-[1fr_1.1fr] md:px-6">
         <Reveal>
-          <div className="caps text-[11px] text-blueprint">Compliance you can cite</div>
-          <h2 className="mt-2 text-[clamp(30px,4.2vw,52px)] leading-[1.02] font-semibold tracking-tight">No green tick without a source.</h2>
+          <div className="caps text-[11px] text-signal">Compliance you can cite</div>
+          <h2 className="mt-2 text-[clamp(34px,5vw,68px)] leading-[0.98] font-semibold tracking-[-0.035em]">No green tick without a source.</h2>
           <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-lane-dim">
             {RULES.length} rules from GO 105, GO 168, HMDA guidance and the AMASR Act, each with its reference, source link and last-verified date. Where sources disagree — {Object.values(CONFLICT_GROUPS).map((g) => g.title.replace(/^(Mortgage|Open)/, (w) => w.toLowerCase())).join(", ")} — you pick, and the choice is kept with a note.
           </p>
@@ -264,7 +255,7 @@ export function Landing() {
           </div>
         </Reveal>
         <Reveal delay={0.1}>
-          <div className="overflow-hidden rounded-[8px] border border-line bg-asphalt-2 shadow-2xl">
+          <div className="noise relative overflow-hidden rounded-[14px] border border-line bg-asphalt-2 shadow-[0_40px_120px_-40px_rgba(63,193,217,.35)]">
             {[
               { s: 'Pass', tone: 'var(--sign-green-ink)', t: 'Public-purpose reservation ≥ 10% of net', r: 'OS-10 · GO Ms 105 (2021)', a: '10.62% of 68,797 m²' },
               { s: 'Pass', tone: 'var(--sign-green-ink)', t: 'Junction splays cut per table', r: 'RD-TABLE · Rule 5(3) Table I', a: '3 m legs at 22 junctions' },
@@ -288,36 +279,35 @@ export function Landing() {
         </Reveal>
       </section>
 
-      {/* FEATURES */}
-      <section id="features" className="scroll-mt-20 border-t border-line bg-asphalt-2">
-        <div className="mx-auto max-w-[1240px] px-4 py-24 md:px-6">
-          <Reveal>
-            <div className="caps text-[11px] text-blueprint">Everything after the layout</div>
-            <h2 className="mt-2 max-w-[22ch] text-[clamp(30px,4.2vw,52px)] leading-[1.02] font-semibold tracking-tight">An instrument, not a dashboard template.</h2>
-          </Reveal>
-          <div className="mt-12 grid gap-px overflow-hidden rounded-[8px] border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f, i) => (
-              <Reveal key={f.t} delay={(i % 3) * 0.06} className="bg-asphalt">
-                <div className="h-full p-6">
-                  <Icon name={f.icon} size={22} className="text-blueprint" />
-                  <h3 className="mt-4 text-[16.5px] font-semibold">{f.t}</h3>
-                  <p className="mt-1.5 text-[13.5px] leading-relaxed text-lane-dim">{f.d}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+      {/* FINAL CTA */}
+      <section className="noise relative isolate overflow-hidden border-t border-line">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_60%_70%_at_50%_100%,rgba(255,107,26,.25),transparent_70%)]" />
+        <div className="pointer-events-none absolute top-1/2 left-1/2 -z-10 -translate-x-1/2 -translate-y-1/2" aria-hidden>
+          {[520, 760, 1000].map((d, k) => (
+            <div key={d} className={reduce ? 'absolute rounded-full border border-white/[0.06]' : 'spin-slow absolute rounded-full border border-dashed border-white/[0.07]'} style={{ width: d, height: d, left: -d / 2, top: -d / 2, animationDuration: `${60 + k * 30}s` }}>
+              <span className="absolute top-0 left-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: k === 1 ? 'var(--signal)' : 'var(--blueprint)' }} />
+            </div>
+          ))}
         </div>
-      </section>
-
-      {/* CTA */}
-      <section className="drafting-grid relative overflow-hidden">
-        <div className="mx-auto flex max-w-[1240px] flex-col items-start gap-6 px-4 py-28 md:flex-row md:items-end md:justify-between md:px-6">
-          <h2 className="max-w-[16ch] text-[clamp(36px,6vw,80px)] leading-[0.95] font-semibold tracking-[-0.03em]">
-            Your next venture, <span className="sheen">drafted in seconds.</span>
-          </h2>
-          <Cta to="/projects/new">
-            <Icon name="bolt" size={17} /> Start a project
-          </Cta>
+        <div className="mx-auto flex max-w-[1240px] flex-col items-center px-4 py-36 text-center md:px-6">
+          <Reveal>
+            <h2 className="text-[clamp(44px,8vw,120px)] leading-[0.9] font-semibold tracking-[-0.05em]">
+              Your next venture,
+              <br />
+              <span className="sheen">drafted in seconds.</span>
+            </h2>
+          </Reveal>
+          <Reveal delay={0.15} className="mt-10 flex flex-wrap justify-center gap-3">
+            <Cta to="/projects/new">
+              <Icon name="bolt" size={17} /> Generate my layout
+            </Cta>
+            <Cta to="/projects" ghost>
+              My projects
+            </Cta>
+          </Reveal>
+        </div>
+        <div className="text-outline pointer-events-none -mb-[2.2vw] text-center text-[19vw] leading-none font-semibold tracking-[-0.06em] select-none" aria-hidden>
+          LandPlan
         </div>
       </section>
 
