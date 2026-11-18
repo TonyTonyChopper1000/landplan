@@ -165,7 +165,7 @@ export function NewProject() {
                 })}
               </div>
             )}
-            {step === 1 && <SiteStep name={name} setName={setName} d={details} set={set} />}
+            {step === 1 && <SiteStep name={name} setName={setName} d={details} set={set} params={params} />}
             {step === 2 && <PlanStep type={type} d={details} set={set} />}
             {step === 3 && (
               <div className="grid gap-6 md:grid-cols-[1fr_1.2fr]">

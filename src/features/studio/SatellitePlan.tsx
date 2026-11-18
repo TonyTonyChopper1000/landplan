@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Map as MlMap, LngLatBounds, type GeoJSONSource } from 'maplibre-gl';
 import type { FeatureCollection } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import '@/lib/maplibre';
 import { difference, union } from '@/engine/clip';
 import { SQYD, type Region } from '@/engine/geometry';
 import type { Layout } from '@/engine/types';

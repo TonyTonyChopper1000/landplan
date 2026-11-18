@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState, type ReactNode } from 'react';
 import { PRESETS, PRESET_LABELS } from '@/engine/parcel';
 import { PROFILES } from '@/rules/profiles';
-import type { Authority, PresetId } from '@/engine/types';
+import type { Authority, Params, PresetId } from '@/engine/types';
 import { NumberInput, Select, Toggle, cx } from '@/components/ui/controls';
 import type { ProjectDetails, ProjectType } from './types';
 
@@ -37,11 +37,13 @@ export function SiteStep({
   setName,
   d,
   set,
+  params,
 }: {
   name: string;
   setName: (v: string) => void;
   d: ProjectDetails;
   set: (p: Partial<ProjectDetails>) => void;
+  params?: Params;
 }) {
   return (
     <div className="grid gap-5 md:grid-cols-2">
@@ -135,12 +137,12 @@ export function SiteStep({
           />
         </div>
       </L>
-      <BoundaryChoice d={d} set={set} />
+      <BoundaryChoice d={d} set={set} params={params} />
     </div>
   );
 }
 
-function BoundaryChoice({ d, set }: { d: ProjectDetails; set: (p: Partial<ProjectDetails>) => void }) {
+function BoundaryChoice({ d, set, params }: { d: ProjectDetails; set: (p: Partial<ProjectDetails>) => void; params?: Params }) {
   const [mode, setMode] = useState<'shape' | 'map'>(d.boundary ? 'map' : 'shape');
   return (
     <div className="md:col-span-2">
@@ -172,7 +174,7 @@ function BoundaryChoice({ d, set }: { d: ProjectDetails; set: (p: Partial<Projec
       </div>
       {mode === 'map' ? (
         <Suspense fallback={<div className="skeleton h-[420px] rounded-[4px]" />}>
-          <BoundaryMap value={d.boundary} onChange={(b) => set({ boundary: b })} />
+          <BoundaryMap value={d.boundary} onChange={(b) => set({ boundary: b })} params={params} titleAcres={d.acres + d.guntas / 40} />
         </Suspense>
       ) : (
         <ShapePicker d={d} set={set} />
