@@ -101,3 +101,11 @@ export function detectQuality(gl?: WebGLRenderingContext | WebGL2RenderingContex
   const cores = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 8 : 8;
   return { quality: coarse || small || lowGpu || cores <= 4 ? 'mobile' : 'high', ultraBlocked };
 }
+
+/** Preset times that follow the real sun on the chosen day: golden ≈ 8° up in the evening, night = blue hour ≈ 6.5° below. */
+export function presetMinutes(p: Exclude<LightPreset, 'custom'>, day: number, sun: (d: number, m: number) => number): number {
+  if (p === 'morning' || p === 'noon') return PRESET_MINUTES[p];
+  const target = p === 'golden' ? 8 : -6.5;
+  for (let m = 900; m <= 1260; m += 5) if (sun(day, m) <= target) return m;
+  return PRESET_MINUTES[p];
+}

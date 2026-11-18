@@ -82,6 +82,19 @@ export const SECTIONS_2: DocSection[] = [
     ),
   },
   {
+    id: 'render',
+    group: 'Checking and deciding',
+    title: '3D render and sales viewer',
+    body: (
+      <>
+        <p>At the top of the 3D tab, switch from Massing to Render and press Generate render. A detailed scene is built from the current layout in a few seconds: roads with markings and names, the compound wall and entrance gate, gardens and amenities, and, depending on the project type, levelled plot pads, villas built from their setbacks, or a planted farm.</p>
+        <p>Use Morning, Noon, Golden and Night (or the sliders) to change the light; Night is blue hour with the street lights on. The cameras are Aerial (drag to orbit), Arrival (a drive in through the gate), Plan (top-down with status colours) and Walk (WASD keys, or the joystick on a phone).</p>
+        <p>Type a number in Find a plot to fly to it. Click a plot to see its size, area, facing and price, with Enquire on WhatsApp and Share this plot. Refine filters plots by status, budget, size, facing, road frontage and corner. Layers turns labels, status colours, amenities, future homes and the surroundings on or off; Download saves stills, a short film or a PDF brochure; Info shows the authority, survey numbers, LP number and compliance summary.</p>
+        <p>Buyers can open the same view without any editing at <code>/view/&lt;project id&gt;</code>; Share gives the link and an embed code for your website. Add your WhatsApp number and LP number in the project wizard or in Info. Satellite surroundings appear when the parcel was traced on the map or imported; Google 3D surroundings also need a Google Maps key.</p>
+      </>
+    ),
+  },
+  {
     id: 'compare',
     group: 'Checking and deciding',
     title: 'Scenarios and comparison',

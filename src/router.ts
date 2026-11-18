@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 /** Tiny history router: '/', '/projects', '/projects/new', '/projects/:id'. The hash stays free for share links. */
-export type Route = { name: 'landing' } | { name: 'projects' } | { name: 'new' } | { name: 'workspace'; id: string } | { name: 'scratch' } | { name: 'docs'; section?: string };
+export type Route = { name: 'landing' } | { name: 'projects' } | { name: 'new' } | { name: 'workspace'; id: string } | { name: 'scratch' } | { name: 'docs'; section?: string } | { name: 'view'; id: string };
 
 export function parse(path: string): Route {
   const p = path.replace(/\/+$/, '') || '/';
@@ -12,6 +12,8 @@ export function parse(path: string): Route {
   if (p === '/docs') return { name: 'docs' };
   const d = /^\/docs\/([\w-]+)$/.exec(p);
   if (d) return { name: 'docs', section: d[1] };
+  const v = /^\/view\/([\w-]+)$/.exec(p);
+  if (v) return { name: 'view', id: v[1] };
   const m = /^\/projects\/([\w-]+)$/.exec(p);
   if (m) return { name: 'workspace', id: m[1] };
   return { name: 'landing' };

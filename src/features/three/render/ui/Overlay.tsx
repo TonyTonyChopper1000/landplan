@@ -8,14 +8,14 @@ import { area as fmtArea, money } from '@/lib/format';
 import { TYPE_INFO, type ProjectDetails } from '@/features/projects/types';
 import { useUi } from '@/state/ui';
 import { useWorkspace } from '@/state/workspace';
-import { istDate } from '../../sun';
+import { istDate, sunPosition } from '../../sun';
 import type { Built } from '../build';
 import { defaultRoadName } from '../kit/ctx';
 import { filterActive, matches, statusOf } from '../Plots';
 import { useSun } from '../Stage';
 import { walkInput } from '../Cameras';
 import type { RenderProps } from '../RenderView';
-import { EMPTY_FILTER, PRESET_MINUTES, STATUS_COLOURS, STATUS_LABEL, todayDoy, useRender, type CameraMode, type Filter, type LightPreset, type Sheet } from '../store';
+import { EMPTY_FILTER, presetMinutes, STATUS_COLOURS, STATUS_LABEL, todayDoy, useRender, type CameraMode, type Filter, type LightPreset, type Sheet } from '../store';
 import { ESRI_ATTRIBUTION } from '../context/Ground';
 import { googleAttribution } from '../context/GoogleTiles';
 import { brochure, captureStill, download, recordFilm, stampLine, type StampInfo } from './exports';
@@ -105,7 +105,7 @@ export function Overlay({
     }
   };
 
-  const setPreset = (p: Exclude<LightPreset, 'custom'>) => s.set({ preset: p, minutes: PRESET_MINUTES[p] });
+  const setPreset = (p: Exclude<LightPreset, 'custom'>) => s.set({ preset: p, minutes: presetMinutes(p, s.day, (dd, mm) => sunPosition(istDate(dd, mm), lat, lon).elevation) });
   const sheet = (x: Sheet) => s.set({ sheet: s.sheet === x ? null : x });
   const find = (raw: string) => {
     const no = Number(raw.replace(/\D/g, ''));

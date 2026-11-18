@@ -52,7 +52,7 @@ void main(){
 
 function NightDome({ night, sunDir }: { night: number; sunDir: THREE.Vector3 }) {
   const mat = useMemo(
-    () => new THREE.ShaderMaterial({ vertexShader: NIGHT_VS, fragmentShader: NIGHT_FS, uniforms: { uNight: { value: 0 }, uSun: { value: new THREE.Vector3() } }, side: THREE.BackSide, transparent: true, depthWrite: false, depthTest: false, fog: false }),
+    () => new THREE.ShaderMaterial({ vertexShader: NIGHT_VS, fragmentShader: NIGHT_FS, uniforms: { uNight: { value: 0 }, uSun: { value: new THREE.Vector3() } }, side: THREE.BackSide, transparent: true, depthWrite: false, depthTest: true, fog: false }),
     [],
   );
   useEffect(() => () => mat.dispose(), [mat]);
@@ -62,7 +62,7 @@ function NightDome({ night, sunDir }: { night: number; sunDir: THREE.Vector3 }) 
   useFrame(({ camera }) => ref.current?.position.copy(camera.position));
   if (night <= 0.01) return null;
   return (
-    <mesh ref={ref} material={mat} renderOrder={-1} frustumCulled={false}>
+    <mesh ref={ref} material={mat} renderOrder={-10} frustumCulled={false}>
       <sphereGeometry args={[100, 32, 16]} />
     </mesh>
   );
@@ -71,6 +71,7 @@ function NightDome({ night, sunDir }: { night: number; sunDir: THREE.Vector3 }) 
 export function Stage({ built, lat, lon }: { built: Built; lat: number; lon: number }) {
   const sun = useSun(lat, lon);
   const quality = useRender((s) => s.quality);
+  const plan = useRender((s) => s.camera === 'plan');
   const { scene, invalidate } = useThree();
   const { ctx } = built;
   const size = ctx.size;
@@ -85,10 +86,10 @@ export function Stage({ built, lat, lon }: { built: Built; lat: number; lon: num
   const low = 1 - Math.min(1, Math.max(0, sun.elevation / 25));
   const sunCol = lerpC('#fff4e2', '#ffb070', low * (1 - nf));
   const lightCol = nf > 0.6 ? new THREE.Color('#9db4ff') : sunCol;
-  const lightI = nf > 0.6 ? 0.45 : Math.max(0, Math.min(1, (sun.elevation + 1) / 6)) * 3.1;
-  const hemiSky = nf > 0.5 ? lerpC('#a9bff0', '#5f7cc4', nf) : lerpC('#cfe2f5', '#f2c79a', low * 0.6);
+  const lightI = nf > 0.6 ? 0.32 : Math.max(0, Math.min(1, (sun.elevation + 1) / 6)) * 3.1;
+  const hemiSky = nf > 0.5 ? lerpC('#8fa6dc', '#4a64a8', nf) : lerpC('#cfe2f5', '#f2c79a', low * 0.6);
   const hemiGround = nf > 0.5 ? '#1a2238' : '#5d5440';
-  const hemiI = 0.9 - nf * 0.35;
+  const hemiI = 0.9 - nf * 0.62;
   const fogCol = nf > 0.5 ? lerpC('#3c4d74', '#16213d', (nf - 0.5) * 2) : lerpC('#cbd9e6', '#e9c49c', low);
   const pos = useMemo(() => new THREE.Vector3(c.x, 0, -c.y).addScaledVector(lightDir, size * 1.6), [c, lightDir, size]);
   const lightRef = useRef<THREE.DirectionalLight>(null);
@@ -111,13 +112,13 @@ export function Stage({ built, lat, lon }: { built: Built; lat: number; lon: num
   }, [c, size, pos, invalidate]);
 
   useEffect(() => {
-    scene.fog = new THREE.Fog(fogCol, size * 1.4, size * 7);
+    scene.fog = plan ? null : new THREE.Fog(fogCol, size * 1.4, size * 7);
     shared.night.value = nf;
     built.glowMats.forEach((m) => {
       (m as THREE.Material & { opacity: number }).opacity = nf * 0.95;
     });
     invalidate();
-  }, [scene, fogCol, nf, size, built, invalidate]);
+  }, [scene, fogCol, nf, size, built, invalidate, plan]);
 
   useFrame((_, dt) => {
     if (quality !== 'mobile') shared.time.value += dt;

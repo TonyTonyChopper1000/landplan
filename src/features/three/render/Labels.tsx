@@ -13,6 +13,13 @@ import { useRender } from './store';
 export const FONT = '/fonts/Geist-SemiBold.ttf';
 export const FONT_BOLD = '/fonts/Geist-Bold.ttf';
 
+/** Rotate text so its "up" points away from the hero camera (which sits outside the gate). */
+export function readable(ctx: SceneCtx, rz: number) {
+  const ox = -ctx.gate.inward.x;
+  const oy = -ctx.gate.inward.y;
+  return -Math.sin(rz) * ox + Math.cos(rz) * oy > 0 ? rz + Math.PI : rz;
+}
+
 function makeBatch(items: { text: string; x: number; y: number; z: number; rz: number; size: number; color: string; outline?: string }[], opacity = 1) {
   const batch = new BatchedText();
   batch.font = FONT;
@@ -46,7 +53,7 @@ export function PlotLabels({ ctx, top, units }: { ctx: SceneCtx; top: number; un
     for (const p of ctx.layout.plots) {
       const s = Math.max(0.9, Math.min(farm ? 6 : 3, Math.min(p.width, p.depth) * 0.26));
       // Text reads along the frontage; numbers sit nearer the road, details below.
-      const rz = ctx.theta + (p.row === 1 ? Math.PI : 0);
+      const rz = readable(ctx, ctx.theta);
       const back = { x: -Math.sin(ctx.theta) * (p.row === 1 ? -1 : 1), y: Math.cos(ctx.theta) * (p.row === 1 ? -1 : 1) };
       const c = p.centroid;
       const off = Math.min(p.depth * 0.18, s * 0.9);
@@ -58,7 +65,7 @@ export function PlotLabels({ ctx, top, units }: { ctx: SceneCtx; top: number; un
         det.push({ text: `${p.width.toFixed(1)} × ${p.depth.toFixed(1)} m\n${fmtArea(p.area, units)}`, x: dc.x, y: ty, z: -dc.y, rz, size: s * 0.36, color: '#fdfcf7', outline: '#20262c' });
       }
     }
-    return { nums: makeBatch(nums), details: det.length ? makeBatch(det) : null };
+    return { nums: makeBatch([...nums, ...det]), details: null as BatchedText | null };
   }, [ctx, top, units, farm]);
   useEffect(
     () => () => {
@@ -87,7 +94,7 @@ export function PlotLabels({ ctx, top, units }: { ctx: SceneCtx; top: number; un
 export function RoadLabels({ ctx }: { ctx: SceneCtx }) {
   const show = useRender((s) => s.layers.labels);
   const batch = useMemo(
-    () => (ctx.roadLabels.length ? makeBatch(ctx.roadLabels.map((r) => ({ text: r.text.toUpperCase(), x: r.p.x, y: 0.06, z: -r.p.y, rz: r.angle, size: r.size, color: '#f2f2ea' })), 0.82) : null),
+    () => (ctx.roadLabels.length ? makeBatch(ctx.roadLabels.map((r) => ({ text: r.text.toUpperCase(), x: r.p.x, y: 0.06, z: -r.p.y, rz: readable(ctx, r.angle), size: r.size, color: '#f2f2ea' })), 0.82) : null),
     [ctx],
   );
   useEffect(() => () => batch?.dispose(), [batch]);

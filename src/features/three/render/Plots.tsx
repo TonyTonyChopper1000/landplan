@@ -105,9 +105,9 @@ export function Plots({ built }: { built: Built }) {
       {type.ghosts && <primitive object={type.ghosts} />}
       {outline && (
         <>
-          <Line points={outline.pts} color="#ffffff" lineWidth={3.5} />
+          <Line points={outline.pts} color="#ffffff" lineWidth={5} depthTest={false} renderOrder={5} />
           <mesh geometry={outline.curtain}>
-            <meshBasicMaterial color="#ffffff" transparent opacity={0.28} side={THREE.DoubleSide} depthWrite={false} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.4} side={THREE.DoubleSide} depthWrite={false} />
           </mesh>
           {outline.tags.map((t, i) => (
             <Html key={i} position={t.p} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>

@@ -36,7 +36,7 @@ export function Cameras({ ctx, onFilmEnd }: { ctx: SceneCtx; onFilmEnd?: () => v
   const filming = useRender((s) => s.filming);
   const focus = useRender((s) => s.focus);
   const set = useRender((s) => s.set);
-  const { camera, invalidate, size: vp } = useThree();
+  const { invalidate, size: vp, get } = useThree();
   const orbit = useRef<OrbitImpl>(null);
   const curve = useMemo(() => arrivalCurve(ctx), [ctx]);
   const pose = useMemo(() => aerialPose(ctx), [ctx]);
@@ -47,6 +47,7 @@ export function Cameras({ ctx, onFilmEnd }: { ctx: SceneCtx; onFilmEnd?: () => v
   const recenter = useRender((s) => s.recenter);
   // Initial aerial pose (and Recenter).
   useEffect(() => {
+    const camera = get().camera;
     if (mode !== 'aerial') return;
     if (!anim.current || recenter) {
       anim.current = null;
@@ -61,6 +62,7 @@ export function Cameras({ ctx, onFilmEnd }: { ctx: SceneCtx; onFilmEnd?: () => v
   // Fly to a plot (Find a plot / deep link / click).
   useEffect(() => {
     if (!focus) return;
+    const camera = get().camera;
     const p = ctx.layout.plots.find((q) => q.no === focus.no);
     if (!p) return;
     if (mode !== 'aerial' && mode !== 'plan') set({ camera: 'aerial' });
@@ -80,6 +82,7 @@ export function Cameras({ ctx, onFilmEnd }: { ctx: SceneCtx; onFilmEnd?: () => v
   // Arrival + film playback.
   const play = useRef<{ t0: number; phase: 'drive' | 'orbit' } | null>(null);
   useEffect(() => {
+    const camera = get().camera;
     if (mode === 'arrival' || filming) {
       if (reducedMotion() && !filming) {
         const end = curve.getPointAt(1);
@@ -117,7 +120,7 @@ export function Cameras({ ctx, onFilmEnd }: { ctx: SceneCtx; onFilmEnd?: () => v
     };
   }, [invalidate]);
 
-  useFrame((_, dt) => {
+  useFrame(({ camera }, dt) => {
     clock.current += Math.min(dt, 0.1);
     const t = clock.current;
     const a = anim.current;

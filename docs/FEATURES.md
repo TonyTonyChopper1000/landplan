@@ -188,6 +188,27 @@ which ("Neon cloud" / "this browser") and the save state.
 2. **3D** — massing with react-three-fiber: villas extruded per plot with setbacks, roads, trees on parks,
    real shadows from a **sun-path** slider (date + time, Hyderabad 17.385°N), orbit camera, one-click
    fly-through, coverage label derived from setbacks.
+   **Render mode** (toggle at the top of the 3D tab; code in `src/features/three/render/`, lazy-loaded):
+   a detailed scene built per project type from the exact engine geometry —
+   - *Shared kit*: true-width roads with markings, zebras, kerbs, paver footpaths and painted road names;
+     lamps; compound wall and entrance arch; external approach road; named gardens with amenities chosen by
+     size; clubhouse; utilities; buffers drawn as water, green belts and HT towers; instanced trees with sway.
+   - *Plots*: levelled pads, boundary stones, sample homes, "future homes" ghost massing.
+     *Villas*: contemporary villas from setbacks and floors (flat roof + parapet, stair headroom, tanks,
+     chajjas, framed glazing, balconies, porch, stone cladding, compound wall and gate).
+     *Farm*: plantation rows, drip lines, fenced plots with gates, cottages, borewell, farm pond.
+   - *Viewer*: light presets following the real sun (blue-hour night with lit streets and windows), four
+     cameras (Aerial, Arrival drive, Plan, Walk with WASD / joystick), status colours, ground labels, Find a
+     plot, Refine filters, plot card with price and WhatsApp, Layers / Info / Share / Gallery / Download.
+   - *Rendering*: fitted soft shadows, sky + Lightformer environment, N8AO, bloom, AgX tone mapping, SMAA,
+     vignette; Mobile / High / Ultra (progressive path tracing when idle; disabled without WebGL 2 /
+     float targets). Mobile is picked automatically on phones and low-end GPUs.
+   - *Surroundings*: Google Photorealistic 3D Tiles (key from `VITE_GOOGLE_MAPS_KEY`, georeferenced parcels
+     only, attributions always shown), else Esri imagery fading into haze, else procedural fields.
+   - *Exports*: PNG 1×/2×/4K, 28 s 1080p WebM film, PDF brochure; stamped "Yield study only — not a
+     submission drawing" or the LP number.
+   **Public viewer** `/view/:projectId` (`?plot=N` deep link, iframe embed) opens straight into Render mode
+   without editing UI; demos at `/view/demo-plots`, `/view/demo-villas`, `/view/demo-farm`.
 3. **Schedule** — virtualised TanStack table with sticky header, sort, filters (size, facing, status),
    group by size or facing with totals, inline price override, XLSX/CSV export.
 4. **Feasibility** — compliance tally, computed checks with cited rules, actual vs required, notes,
@@ -294,4 +315,5 @@ Framework-free handler in `src/server`, deployed as one Vercel Node.js function.
 | Golden tests (10 hand-checked layouts), CI performance gate | Not built | No hand-checked layouts were available; benchmark harness has one approximate entry. |
 | Real AI assistant, live rule fetching, payments/CRM | Out of scope | As specified in the prompts. |
 | Original v1 HTML file | Not available | Parity fixtures come from an independent re-implementation of the written v1 spec; see DECISIONS.md. |
+| Render mode on real devices (4 s interactive on mid-range Android, ≥ 30 fps with 300 plots) | Not measured | Screenshots were taken with software WebGL; device performance has not been profiled. Google 3D Tiles and Esri imagery could not be reached from the build environment. |
 | Lighthouse ≥ 90 | Not measured | Heavy modules are code-split; the score has not been run. |

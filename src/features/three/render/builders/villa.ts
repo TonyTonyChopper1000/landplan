@@ -132,7 +132,7 @@ export function buildVilla(ctx: SceneCtx, B: Buckets, p: Plot, o: VillaOpts, bas
   const ph = 1.0;
   const corners = [P(-fw / 2, v0), P(fw / 2, v0), P(fw / 2, v0 + fd), P(-fw / 2, v0 + fd)];
   for (let i = 0; i < 4; i++) B.add(pal.plaster, wallSeg(corners[i], corners[(i + 1) % 4], 0.18, ph, top));
-  bx(pal.trim, 0, vm, fw + 0.2, fd + 0.2, 0.1, top - 0.05);
+  bx('concrete', 0, vm, fw + 0.2, fd + 0.2, 0.1, top - 0.05);
   const hu = porchLeft * (fw / 2 - 1.7);
   const hv = v0 + fd - 2.2;
   bx(pal.plaster, hu, hv, 3.2, 4.2, 2.7, top);

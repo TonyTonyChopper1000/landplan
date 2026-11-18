@@ -59,10 +59,10 @@
 .rv-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .rv-legend i, .rv-check i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 
-.rv-cams { position: absolute; left: 50%; bottom: 86px; transform: translateX(-50%); display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--rv-glass); border: 1px solid var(--rv-line); backdrop-filter: blur(10px); }
+.rv-cams { z-index: 30; position: absolute; left: 50%; bottom: 86px; transform: translateX(-50%); display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--rv-glass); border: 1px solid var(--rv-line); backdrop-filter: blur(10px); }
 .rv-cams button { padding: 7px 16px; }
 
-.rv-toolbar { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 2px; padding: 4px; border-radius: 16px; background: var(--rv-glass); border: 1px solid var(--rv-line); backdrop-filter: blur(12px); }
+.rv-toolbar { z-index: 30; position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 2px; padding: 4px; border-radius: 16px; background: var(--rv-glass); border: 1px solid var(--rv-line); backdrop-filter: blur(12px); }
 .rv-toolbar button { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 58px; padding: 6px 4px; background: none; border: 0; border-radius: 12px; cursor: pointer; color: var(--rv-dim); font-size: 10.5px; }
 .rv-toolbar button:hover, .rv-toolbar button.on { color: var(--rv-ink); background: rgba(255, 255, 255, 0.08); }
 
@@ -73,7 +73,7 @@
 .rv-attr { position: absolute; right: 90px; bottom: 6px; max-width: 46%; font-size: 10px; color: rgba(255, 255, 255, 0.85); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); text-align: right; display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
 .rv-glogo { font-family: 'Product Sans', Arial, sans-serif; font-size: 13px; letter-spacing: -0.02em; }
 
-.rv-card { position: absolute; left: 22px; bottom: 132px; width: 300px; padding: 16px; border-radius: 16px; background: rgba(250, 248, 243, 0.96); color: #15181c; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35); }
+.rv-card { z-index: 30; position: absolute; left: 22px; bottom: 132px; width: 300px; padding: 16px; border-radius: 16px; background: rgba(250, 248, 243, 0.96); color: #15181c; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35); }
 .rv-card .rv-x { color: #15181c; }
 .rv-pill { display: inline-block; padding: 3px 10px; border-radius: 999px; color: #fff; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; }
 .rv-card-no { font-family: ui-serif, Georgia, serif; font-size: 34px; line-height: 1.1; margin: 8px 0 6px; }
@@ -86,7 +86,7 @@
 .rv-card-actions .rv-chip { background: transparent; color: #15181c; border-color: #d9d5cc; backdrop-filter: none; }
 
 .rv-x { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(127, 127, 127, 0.14); display: grid; place-items: center; cursor: pointer; }
-.rv-sheet { position: absolute; right: 22px; top: 66px; width: 340px; max-height: calc(100% - 180px); overflow: auto; padding: 16px; border-radius: 16px; background: rgba(17, 20, 26, 0.9); border: 1px solid var(--rv-line); backdrop-filter: blur(14px); z-index: 5; }
+.rv-sheet { position: absolute; right: 22px; top: 66px; width: 340px; max-height: calc(100% - 180px); overflow: auto; padding: 16px; border-radius: 16px; background: rgba(17, 20, 26, 0.9); border: 1px solid var(--rv-line); backdrop-filter: blur(14px); z-index: 40; }
 .rv-sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 15px; }
 .rv-sheet-head .rv-x { position: static; color: var(--rv-ink); }
 .rv-sheet-foot { position: sticky; bottom: -16px; display: flex; justify-content: space-between; gap: 8px; padding: 12px 0 0; background: inherit; }
