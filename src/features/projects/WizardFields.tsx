@@ -100,9 +100,6 @@ export function PlanStep({ type, d, set }: { type: ProjectType; d: ProjectDetail
         <Toggle label="Rule-aware layout (GO 105 standards)" hint="Junction splays, 9 + 1 open-space split, 50 m² / 6 m minimum plots, 15% mortgage, cited compliance checks." checked={d.ruleAware} onChange={(v) => set({ ruleAware: v })} />
         {type === 'villas' && <Toggle label="Clubhouse / amenity parcel" hint="Reserves 1% as a social-infrastructure parcel for the clubhouse." checked={!!d.clubhouse} onChange={(v) => set({ clubhouse: v })} />}
       </div>
-      <L label="Developer WhatsApp" hint="optional · digits with country code">
-        <input className={input} inputMode="tel" value={d.developerWhatsApp ?? ''} onChange={(e) => set({ developerWhatsApp: e.target.value.replace(/[^\d]/g, '').slice(0, 15) })} placeholder="e.g. 919876543210" />
-      </L>
       <L label="LP number" hint="optional · once approved">
         <input className={input} value={d.lpNumber ?? ''} onChange={(e) => set({ lpNumber: e.target.value.slice(0, 60) })} placeholder="e.g. 000123/LO/Plg/HMDA/2026" />
       </L>

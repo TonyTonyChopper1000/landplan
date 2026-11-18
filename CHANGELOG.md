@@ -16,13 +16,13 @@
 - Sales viewer: Morning / Noon / Golden / Night presets that follow the real sun (night = blue hour),
   date/time sliders and sun readout; Aerial / Arrival / Plan / Walk cameras; status colours and legend;
   plot numbers, dimensions and areas on the ground; Find a plot; Refine (status, budget, size, facing,
-  frontage, corner); plot card with price and WhatsApp; Layers, Info (authority, survey nos., LP number,
+  frontage, corner); plot card with price and Share this plot; Layers, Info (authority, survey nos., LP number,
   compliance summary), Share (link, deep link, iframe embed), Gallery, Download (PNG 1×/2×/4K, 28 s
   1080p WebM film, PDF brochure), all stamped. Quality presets Mobile / High / Ultra (path-traced).
 - Surroundings: Google Photorealistic 3D Tiles when `VITE_GOOGLE_MAPS_KEY` is set and the parcel is
   georeferenced, else Esri satellite, else procedural fields.
 - Public viewer at `/view/:projectId` (`?plot=51` deep links) and demos at `/view/demo-plots|villas|farm`.
-- New optional project details: developer WhatsApp, LP number, brand colour.
+- New optional project details: LP number, brand colour.
 - `scripts/render-shots.mjs` captures every view per project type.
 
 ## Pages, project types and Neon sync

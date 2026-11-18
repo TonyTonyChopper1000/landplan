@@ -199,7 +199,7 @@ which ("Neon cloud" / "this browser") and the save state.
      *Farm*: plantation rows, drip lines, fenced plots with gates, cottages, borewell, farm pond.
    - *Viewer*: light presets following the real sun (blue-hour night with lit streets and windows), four
      cameras (Aerial, Arrival drive, Plan, Walk with WASD / joystick), status colours, ground labels, Find a
-     plot, Refine filters, plot card with price and WhatsApp, Layers / Info / Share / Gallery / Download.
+     plot, Refine filters, plot card with price and share link, Layers / Info / Share / Gallery / Download.
    - *Rendering*: fitted soft shadows, sky + Lightformer environment, N8AO, bloom, AgX tone mapping, SMAA,
      vignette; Mobile / High / Ultra (progressive path tracing when idle; disabled without WebGL 2 /
      float targets). Mobile is picked automatically on phones and low-end GPUs.

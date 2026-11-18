@@ -22,8 +22,6 @@ export type ProjectDetails = {
   clubhouse?: boolean;
   plantation?: string;
   // sales viewer (optional)
-  /** Developer's WhatsApp number in international format, digits only (e.g. 919876543210). */
-  developerWhatsApp?: string;
   /** Accent colour for the public viewer, e.g. #C8102E. */
   brandColour?: string;
   /** HMDA / DTCP layout permission number once approved; stamped on exports. */
