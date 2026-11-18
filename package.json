@@ -12,7 +12,8 @@
     "fixtures": "vitest run src/engine/__tests__/parity.test.ts -u",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "e2e": "node scripts/screenshots.mjs"
+    "e2e": "node scripts/e2e.mjs",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slider": "1.6.1",

@@ -24,10 +24,10 @@ const api = {
       };
       if (!best || res.plotted > best.plotted + 1e-9) best = res;
       batch.push(res);
-      if (batch.length >= 9 || i === list.length - 1) {
-        onBatch(batch, i + 1, list.length);
+      // Stream one θ row at a time (27 layouts). Cancel terminates the worker, so no yielding is needed.
+      if (batch.length >= 27 || i === list.length - 1) {
+        void onBatch(batch, i + 1, list.length);
         batch = [];
-        await new Promise((r) => setTimeout(r, 0));
       }
     }
     if (!best) throw new Error('No candidates');

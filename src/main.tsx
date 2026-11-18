@@ -8,3 +8,7 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
+
+if (import.meta.env.DEV) {
+  void import('./state/project').then((m) => Object.assign(window, { __lp: m }));
+}

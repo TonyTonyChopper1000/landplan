@@ -12,16 +12,16 @@ import { CommandPalette } from '@/features/shell/CommandPalette';
 import { useShortcuts } from '@/features/shell/useShortcuts';
 import { StudioView } from '@/features/studio/StudioView';
 import { Inspector } from '@/features/studio/Inspector';
-import { OptimizerDrawer } from '@/features/studio/OptimizerDrawer';
-import { ScheduleView } from '@/features/schedule/ScheduleView';
 import { FeasibilityView } from '@/features/feasibility/FeasibilityView';
-import { FinancialsView } from '@/features/financials/FinancialsView';
 import { RegulationsView } from '@/features/regulations/RegulationsView';
-import { CompareView } from '@/features/compare/CompareView';
-import { ExportDrawer } from '@/features/reports/ExportDrawer';
 import { AssistantDrawer } from '@/features/assistant/AssistantDrawer';
 import { Icon } from '@/components/ui/Icon';
 
+const ScheduleView = lazy(() => import('@/features/schedule/ScheduleView').then((m) => ({ default: m.ScheduleView })));
+const FinancialsView = lazy(() => import('@/features/financials/FinancialsView').then((m) => ({ default: m.FinancialsView })));
+const CompareView = lazy(() => import('@/features/compare/CompareView').then((m) => ({ default: m.CompareView })));
+const OptimizerDrawer = lazy(() => import('@/features/studio/OptimizerDrawer').then((m) => ({ default: m.OptimizerDrawer })));
+const ExportDrawer = lazy(() => import('@/features/reports/ExportDrawer').then((m) => ({ default: m.ExportDrawer })));
 const ThreeView = lazy(() => import('@/features/three/ThreeView'));
 
 function Drawer({ children, label, width = 380 }: { children: ReactNode; label: string; width?: number }) {
@@ -49,7 +49,9 @@ function DrawerHost() {
     <AnimatePresence>
       {drawer === 'optimizer' && (
         <Drawer key="opt" label="Optimizer" width={420}>
-          <OptimizerDrawer />
+          <Suspense fallback={<div className="skeleton h-full" />}>
+            <OptimizerDrawer />
+          </Suspense>
         </Drawer>
       )}
       {drawer === 'assistant' && (
@@ -59,7 +61,9 @@ function DrawerHost() {
       )}
       {drawer === 'export' && (
         <Drawer key="ex" label="Export" width={360}>
-          <ExportDrawer />
+          <Suspense fallback={<div className="skeleton h-full" />}>
+            <ExportDrawer />
+          </Suspense>
         </Drawer>
       )}
       {drawer === 'inspector' && !wide && (
@@ -112,6 +116,14 @@ function Toast() {
 
 function Route() {
   const tab = useUi((s) => s.tab);
+  return (
+    <Suspense fallback={<div className="drafting-grid h-full" />}>
+      <RouteInner tab={tab} />
+    </Suspense>
+  );
+}
+
+function RouteInner({ tab }: { tab: ReturnType<typeof useUi.getState>['tab'] }) {
   switch (tab) {
     case 'studio':
       return <StudioView />;

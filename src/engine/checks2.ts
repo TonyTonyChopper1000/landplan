@@ -1,8 +1,7 @@
 import { rule } from '../rules/regulations';
 import { PROFILES } from '../rules/profiles';
-import { intersect } from './clip';
 import { constraintFootprint } from './constraints';
-import { pointInRegion, regionArea, segDist, type Pt, type Region } from './geometry';
+import { bbox, pointInRegion, regionArea, segDist, type Pt, type Rect, type Region } from './geometry';
 
 function pointToRegion(p: Pt, r: Region): number {
   if (pointInRegion(p, r)) return 0;
@@ -33,8 +32,12 @@ export function geometryChecks2(
   const parks = layout.open.filter((o) => o.use === 'park');
   const utils = layout.open.filter((o) => o.use === 'util');
   const sis = layout.open.filter((o) => o.use === 'social');
-  const plotsNear = (ring: ReturnType<typeof outer>) =>
-    layout.plots.filter((pl) => touchesAny(ring, outer(pl.region))).map((pl) => pl.no);
+  const plotBoxes = layout.plots.map((pl) => ({ pl, b: bbox(pl.region.flat()) }));
+  const overlaps = (a: Rect, b: Rect, tol: number) => a.x0 - tol <= b.x1 && b.x0 - tol <= a.x1 && a.y0 - tol <= b.y1 && b.y0 - tol <= a.y1;
+  const plotsNear = (ring: ReturnType<typeof outer>) => {
+    const rb = bbox(ring.flat());
+    return plotBoxes.filter(({ pl, b }) => overlaps(rb, b, 0.1) && touchesAny(ring, outer(pl.region))).map(({ pl }) => pl.no);
+  };
 
   // SI cap (HMDA MP 2031)
   {
@@ -168,7 +171,12 @@ export function geometryChecks2(
       return c;
     }
     const foot = cs.flatMap((x) => constraintFootprint(x));
-    const hit = layout.plots.filter((pl) => regionArea(intersect(pl.region, foot)) > 0.01).map((pl) => pl.no);
+    const fb = bbox(foot.flat());
+    // Plots are clipped to the developable area, so test interior sample points instead of a full boolean op.
+    const inside = (pl: (typeof layout.plots)[number]) =>
+      pointInRegion(pl.centroid, foot) ||
+      pl.region.some((ring) => ring.some((q) => pointInRegion({ x: q.x + (pl.centroid.x - q.x) * 0.02, y: q.y + (pl.centroid.y - q.y) * 0.02 }, foot)));
+    const hit = plotBoxes.filter(({ pl, b }) => overlaps(fb, b, 0) && inside(pl)).map(({ pl }) => pl.no);
     const buf = layout.buffers.filter((b) => b.kind === kind);
     c.actual = `${Math.round(buf.reduce((s, b) => s + b.area, 0)).toLocaleString('en-IN')} m² deducted`;
     c.required = buf.map((b) => b.label).join(' · ') || 'outside parcel';

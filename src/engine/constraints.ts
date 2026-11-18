@@ -38,8 +38,19 @@ export function bufferSpec(c: Constraint): BufferSpec {
   }
 }
 
-/** The excluded footprint of a constraint (feature + buffer). */
+const footCache = new WeakMap<Constraint, Region>();
+
+/** The excluded footprint of a constraint (feature + buffer). Cached per constraint object. */
 export function constraintFootprint(c: Constraint): Region {
+  let r = footCache.get(c);
+  if (!r) {
+    r = computeFootprint(c);
+    footCache.set(c, r);
+  }
+  return r;
+}
+
+function computeFootprint(c: Constraint): Region {
   const spec = bufferSpec(c);
   if (c.kind === 'lake') {
     if (c.pts.length < 3) return [];

@@ -29,7 +29,7 @@ export const useProject = create<ProjectState>()(
     {
       limit: 100,
       partialize: (s) => ({ params: s.params }),
-      equality: (a, b) => a.params === b.params,
+      equality: (a, b) => a.params === b.params || JSON.stringify(a.params) === JSON.stringify(b.params),
       handleSet: (handleSet) => leading(handleSet, 400),
     },
   ),

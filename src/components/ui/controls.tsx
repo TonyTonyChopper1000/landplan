@@ -77,7 +77,10 @@ export function NumberInput({
   useEffect(() => setTxt(String(Math.round(value * 1000) / 1000)), [value]);
   const commit = () => {
     const v = Number(txt);
-    if (Number.isFinite(v)) onChange(Math.min(max ?? Infinity, Math.max(min ?? -Infinity, v)));
+    if (Number.isFinite(v)) {
+      const c = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, v));
+      if (c !== value) onChange(c);
+    }
     else setTxt(String(value));
   };
   return (

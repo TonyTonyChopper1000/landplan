@@ -9,6 +9,7 @@ import {
   clipRect,
   naiveInset,
   pointInRegion,
+  rectArea,
   rectPoly,
   regionArea,
   regionCentroid,
@@ -151,7 +152,22 @@ export function layoutWith(prep: Prepared, g: GridConfig, roadOverride?: { front
           if (!hasRoad({ x: c.x - (sx * roadX) / 2, y: c.y - (sy * roadY) / 2 })) continue;
           tris.push([c, { x: c.x + sx * s, y: c.y }, { x: c.x, y: c.y + sy * s }]);
         }
-        if (tris.length) {
+        const full = region.length === 1 && Math.abs(regArea(region) - rectArea(rect)) < 1e-6;
+        if (tris.length && full) {
+          // Fast path: an uncut rectangular block. Chamfer the junction corners directly.
+          const cutAt = new Set(tris.map((t) => `${t[0].x},${t[0].y}`));
+          const ring: Pt[] = [];
+          for (const [c, sx, sy] of corners) {
+            if (cutAt.has(`${c.x},${c.y}`)) {
+              const a = sx === sy ? { x: c.x, y: c.y + sy * s } : { x: c.x + sx * s, y: c.y };
+              const b = sx === sy ? { x: c.x + sx * s, y: c.y } : { x: c.x, y: c.y + sy * s };
+              ring.push(a, b);
+            } else ring.push(c);
+          }
+          splayArea += tris.length * (s * s) / 2;
+          splayPolys.push(...tris);
+          region = [ring];
+        } else if (tris.length) {
           const cut = intersect(region, union(tris));
           const ca = regionArea(cut);
           if (ca > 0) {
