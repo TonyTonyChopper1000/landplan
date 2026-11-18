@@ -21,6 +21,12 @@ export default function BoundaryMap({ value, onChange }: { value?: Boundary; onC
   const start = value?.anchor ?? { lat: 17.385, lon: 78.4867 };
   const [pts, setPts] = useState<LL[]>(() => (value && value.source === 'drawn' ? value.polygon.map((p) => localToLonLat(p, value.anchor)) : []));
   const [msg, setMsg] = useState<string | null>(null);
+  const [drawing, setDrawing] = useState(!value);
+  const drawingRef = useRef(drawing);
+  drawingRef.current = drawing;
+  const ptsRef = useRef(pts);
+  ptsRef.current = pts;
+  const finishRef = useRef<() => void>(() => undefined);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -33,7 +39,17 @@ export default function BoundaryMap({ value, onChange }: { value?: Boundary; onC
       style: { version: 8, sources: { sat: { type: 'raster', tiles: [ESRI], tileSize: 256, attribution: 'Imagery © Esri, Maxar, Earthstar Geographics' } }, layers: [{ id: 'sat', type: 'raster', source: 'sat' }] },
     });
     m.on('error', () => setFailed(true));
-    m.on('click', (e) => setPts((p) => [...p, [e.lngLat.lng, e.lngLat.lat]]));
+    m.on('click', (e) => {
+      if (!drawingRef.current) return;
+      const cur = ptsRef.current;
+      // Clicking the first corner again closes the shape.
+      if (cur.length >= 3) {
+        const first = m.project(cur[0] as [number, number]);
+        if (Math.hypot(first.x - e.point.x, first.y - e.point.y) < 14) return finishRef.current();
+      }
+      setPts((p) => [...p, [e.lngLat.lng, e.lngLat.lat]]);
+    });
+    m.on('dblclick', () => drawingRef.current && ptsRef.current.length >= 3 && finishRef.current());
     m.doubleClickZoom.disable();
     map.current = m;
     return () => m.remove();
@@ -50,7 +66,7 @@ export default function BoundaryMap({ value, onChange }: { value?: Boundary; onC
       m.addSource('trace', { type: 'geojson', data });
       m.addLayer({ id: 'fill', type: 'fill', source: 'trace', paint: { 'fill-color': '#3FC1D9', 'fill-opacity': 0.2 } });
       m.addLayer({ id: 'line', type: 'line', source: 'trace', paint: { 'line-color': '#FF6B1A', 'line-width': 2.5 } });
-      m.addLayer({ id: 'pts', type: 'circle', source: 'trace', paint: { 'circle-radius': 4, 'circle-color': '#fff' } });
+      m.addLayer({ id: 'pts', type: 'circle', source: 'trace', paint: { 'circle-radius': 5, 'circle-color': '#fff', 'circle-stroke-color': '#FF6B1A', 'circle-stroke-width': 2 } });
     };
     if (m.isStyleLoaded()) apply();
     else m.once('load', apply);
@@ -63,7 +79,13 @@ export default function BoundaryMap({ value, onChange }: { value?: Boundary; onC
     const c = mid(pts);
     onChange({ polygon: centre(ensureCCW(local)), anchor: { lon: c[0], lat: c[1] }, source: 'drawn' });
     setMsg(`Boundary set: ${fmtAcres(area(local))}`);
+    setDrawing(false);
   };
+  finishRef.current = use;
+  useEffect(() => {
+    const c = map.current?.getCanvas();
+    if (c) c.style.cursor = drawing ? 'crosshair' : '';
+  }, [drawing]);
   const goTo = (raw: string) => {
     const n = raw.match(/-?\d+(\.\d+)?/g)?.map(Number);
     if (!n || n.length < 2) return setMsg('Paste coordinates like 17.4123, 78.3456');
@@ -121,9 +143,36 @@ export default function BoundaryMap({ value, onChange }: { value?: Boundary; onC
           Use this boundary
         </button>
       </div>
-      <div ref={box} className="h-[380px] overflow-hidden rounded-[4px] border border-line" aria-label="Satellite map: click the corners of your land in order" />
+      <div className="relative">
+        <div ref={box} className="h-[420px] overflow-hidden rounded-[4px] border border-line" aria-label="Satellite map: click the corners of your land in order" />
+        <div className="absolute top-2 left-2 z-10 flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setDrawing((d) => !d)}
+            aria-pressed={drawing}
+            className={`h-9 rounded-full px-4 text-[13px] font-medium shadow ${drawing ? 'bg-signal text-white' : 'bg-white text-black hover:bg-white/90'}`}
+          >
+            {drawing ? '✎ Drawing — click the corners' : pts.length ? '✎ Edit boundary' : '✎ Draw boundary'}
+          </button>
+          {drawing && pts.length >= 3 && (
+            <button type="button" onClick={use} className="h-9 rounded-full bg-white px-4 text-[13px] font-medium text-black shadow hover:bg-white/90">
+              ✓ Finish ({pts.length} corners)
+            </button>
+          )}
+          {drawing && pts.length > 0 && (
+            <button type="button" onClick={() => setPts((p) => p.slice(0, -1))} className="h-9 rounded-full bg-white/90 px-3 text-[13px] text-black shadow hover:bg-white">
+              ↶ Undo
+            </button>
+          )}
+        </div>
+        {drawing && (
+          <div className="pointer-events-none absolute bottom-2 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/70 px-4 py-1.5 text-center text-[12px] text-white">
+            {pts.length === 0 ? 'Zoom to your land, then click its first corner' : pts.length < 3 ? `Corner ${pts.length} placed — click the next corner` : 'Keep clicking corners. Click the first corner, double-click, or press Finish to close'}
+          </div>
+        )}
+      </div>
       <p className="text-[11.5px] text-lane-dim">
-        {failed ? 'Satellite tiles could not load here; import a KML or DXF instead. ' : 'Click each corner of the land in order, then press Use this boundary. '}
+        {failed ? 'Satellite tiles could not load here; import a KML or DXF instead. ' : 'Press Draw boundary, click each corner of the land in order on the map, then Finish. Scroll or pinch to zoom, drag to move. '}
         A traced boundary is accurate to a few metres; for exact land, import the surveyor&apos;s DGPS/DXF or KML.
         {msg && <strong className="ml-1 text-lane">{msg}</strong>}
       </p>

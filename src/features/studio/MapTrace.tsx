@@ -42,6 +42,7 @@ export default function MapTrace() {
     m.on('error', () => setFailed(true));
     m.on('click', (e) => setPts((p) => [...p, [e.lngLat.lng, e.lngLat.lat]]));
     m.doubleClickZoom.disable();
+    m.getCanvas().style.cursor = 'crosshair';
     map.current = m;
     return () => m.remove();
   }, [anchor.lat, anchor.lon]);
