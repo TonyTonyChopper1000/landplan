@@ -107,7 +107,9 @@ export function layoutWith(prep: Prepared, g: GridConfig, roadOverride?: { front
   const devRot = rotateRegion(prep.developable, -theta, origin);
   const insetRot = rotateRegion(prep.inset, -theta, origin);
   const bb = bbox(devRot.flat());
-  const pitchY = 2 * depth + roadY;
+  const dTop = rules && params.plots.mixedDepths ? depth * 1.25 : depth;
+  const bh = depth + dTop;
+  const pitchY = bh + roadY;
   const pitchX = g.blockLen + roadX;
   const x0 = bb.x0 - g.offX * pitchX;
   const y0 = bb.y0 - g.offY * pitchY;
@@ -126,7 +128,7 @@ export function layoutWith(prep: Prepared, g: GridConfig, roadOverride?: { front
     const y = y0 + j * pitchY;
     for (let i = 0; i < cols; i++) {
       const x = x0 + i * pitchX;
-      const rect: Rect = { x0: x, y0: y, x1: x + g.blockLen, y1: y + 2 * depth };
+      const rect: Rect = { x0: x, y0: y, x1: x + g.blockLen, y1: y + bh };
       let region = clipRegion(devRot, rect, robust);
       const a0 = region.length ? regArea(region) : 0;
       fragments += a0;
@@ -186,19 +188,21 @@ export function layoutWith(prep: Prepared, g: GridConfig, roadOverride?: { front
       if (b.use !== 'plots') continue;
       const [xa, xb] = b.fill;
       for (const fs of [-1, 1] as const) {
+        const rd = fs === -1 ? depth : dTop;
         const ry0 = fs === -1 ? b.rect.y0 : b.rect.y0 + depth;
-        const ry1 = ry0 + depth;
+        const ry1 = ry0 + rd;
         const row: Plot[] = [];
         let x = xa;
         while (x < xb - 1e-9) {
-          const w = seq[k % seq.length];
+          const s0 = seq[k % seq.length];
           k++;
+          const w = rd === depth ? s0 : { sqyd: s0.sqyd, width: (s0.sqyd * SQYD) / rd };
           const prect: Rect = { x0: x, y0: ry0, x1: x + w.width, y1: ry1 };
           x += w.width;
           const reg = clipRegion(b.fillRegion, prect, robust);
           if (!reg.length) continue;
           const pa = regArea(reg);
-          const full = w.width * depth;
+          const full = w.width * rd;
           if (pa < 0.6 * full || pa < prep.minPlot) continue;
           if (rules && params.plots.minWidth > 0 && w.width < params.plots.minWidth) continue;
           const p: Plot = {
@@ -209,7 +213,7 @@ export function layoutWith(prep: Prepared, g: GridConfig, roadOverride?: { front
             region: reg,
             area: pa,
             width: w.width,
-            depth,
+            depth: rd,
             sizeSqYd: w.sqyd,
             irregular: pa < 0.965 * full,
             corner: false,
@@ -237,7 +241,7 @@ export function layoutWith(prep: Prepared, g: GridConfig, roadOverride?: { front
     }
   }
 
-  const geom: GridGeom = { x0, y0, pitchX, pitchY, blockLen: g.blockLen, depth2: 2 * depth, roadX, roadY, cols, rows };
+  const geom: GridGeom = { x0, y0, pitchX, pitchY, blockLen: g.blockLen, depth2: bh, roadX, roadY, cols, rows };
   const runs = roadRuns(
     insetRot,
     geom,

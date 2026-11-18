@@ -129,7 +129,7 @@ export function v1Run(inp: V1Input, thetaDeg: number, bl: number, offX: number, 
       const bc = centroidOf(poly);
       blocks.push({ x0, y0, poly, area: a, dist: Math.hypot(bc.x - c.x, bc.y - c.y), open: false });
     }
-  const order = blocks.map((b, i) => i).sort((a, b) => blocks[a].dist - blocks[b].dist || a - b);
+  const order = blocks.map((_, i) => i).sort((a, b) => blocks[a].dist - blocks[b].dist || a - b);
   let cum = 0;
   for (const i of order) {
     if (cum >= gross * (inp.openPct / 100)) break;
