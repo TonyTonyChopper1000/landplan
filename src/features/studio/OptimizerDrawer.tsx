@@ -98,14 +98,14 @@ function Pareto({ results }: { results: Candidate[] }) {
 }
 
 export function OptimizerDrawer() {
-  const { running, done, total, results, best, ms, error } = useOptimizer();
+  const { running, done, total, results, best, ms, error, where } = useOptimizer();
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-line px-3 py-2">
         <div>
           <Caps>{t('optimizer.title')}</Caps>
           <div className="num text-[11px] text-lane-dim">
-            {done}/{total} layouts · {(ms / 1000).toFixed(2)} s {running ? '· running in worker' : ''}
+            {done}/{total} layouts · {(ms / 1000).toFixed(2)} s {running ? (where === 'server' ? '· running on the server (large site)' : '· running in worker') : where === 'server' ? '· solved on the server' : ''}
           </div>
         </div>
         <div className="flex gap-1">

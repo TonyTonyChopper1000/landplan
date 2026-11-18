@@ -1,0 +1,9 @@
+{
+  "id": "hmda-000091-2020",
+  "source": "HMDA draft LP 000091/LO/Plg/HMDA/2020 (approval letter area statement)",
+  "boundary": null,
+  "boundaryNote": "The digitised boundary is not yet available. The harness substitutes an equal-area rectangle (aspect 1.6) until a GeoJSON boundary is added here.",
+  "netSiteM2": 346865,
+  "record": { "plottedM2": 214855, "roadsM2": 92809, "parkM2": 26202, "socialInfraM2": 8758 },
+  "params": { "site": { "preset": "rect", "authority": "HMDA" } }
+}

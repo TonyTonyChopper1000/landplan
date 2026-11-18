@@ -9,6 +9,3 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-if (import.meta.env.DEV) {
-  void import('./state/project').then((m) => Object.assign(window, { __lp: m }));
-}

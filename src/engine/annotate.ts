@@ -19,13 +19,33 @@ export function multiplierFor(p: Pick<Plot, 'facing' | 'corner' | 'irregular'>, 
 }
 
 /** Number in generation order, convert to world frame, set facing, multiplier and mortgage. */
-export function annotate(plots: Plot[], params: Params, thetaRad: number, origin: Pt): void {
-  plots.forEach((p, i) => {
-    p.no = i + 1;
+export function annotate(plots: Plot[], params: Params, thetaRad: number, origin: Pt, entry?: Pt): void {
+  for (const p of plots) {
     p.region = rotateRegion(p.region, thetaRad, origin);
     p.centroid = regionCentroid(p.region);
+  }
+  if (params.plots.numbering === 'serpentine' && entry) serpentine(plots, entry);
+  plots.forEach((p, i) => {
+    p.no = i + 1;
     p.facing = facingFor(p.row, thetaRad, params.site.northOffset);
     p.multiplier = multiplierFor(p, params.money);
   });
-  applyMortgage(plots, params.money.mortPct);
+  applyMortgage(plots, params.money.mortPct, params.money.mortPolicy);
+}
+
+/** Real-layout numbering: blocks from the entry outward; bottom row left→right, top row right→left. */
+function serpentine(plots: Plot[], entry: Pt): void {
+  const blocks = new Map<number, Plot[]>();
+  for (const p of plots) blocks.set(p.blockId, [...(blocks.get(p.blockId) ?? []), p]);
+  const dist = (g: Plot[]) => {
+    const c = g.reduce((a, p) => ({ x: a.x + p.centroid.x / g.length, y: a.y + p.centroid.y / g.length }), { x: 0, y: 0 });
+    return Math.hypot(c.x - entry.x, c.y - entry.y);
+  };
+  const ordered = [...blocks.entries()].sort((a, b) => dist(a[1]) - dist(b[1]) || a[0] - b[0]);
+  const out: Plot[] = [];
+  for (const [, g] of ordered) {
+    out.push(...g.filter((p) => p.row === -1).sort((a, b) => a.rect.x0 - b.rect.x0));
+    out.push(...g.filter((p) => p.row === 1).sort((a, b) => b.rect.x0 - a.rect.x0));
+  }
+  plots.splice(0, plots.length, ...out);
 }

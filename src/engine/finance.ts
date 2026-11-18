@@ -61,12 +61,13 @@ export function finance(layout: Layout, o: Opts = {}): Finance {
   let plots = layout.plots;
   if (o.mortPct !== undefined) {
     plots = layout.plots.map((p) => ({ ...p }));
-    applyMortgage(plots, o.mortPct);
+    applyMortgage(plots, o.mortPct, params.money.mortPolicy);
   }
   const rateK = o.rate ?? 1;
   const grossSqyd = layout.gross / SQYD;
   const landCost = (layout.gross / 4046.8564224) * m.landCost;
-  const devCost = grossSqyd * m.devCost * (o.cost ?? 1);
+  const roadLen = layout.roadRuns.reduce((s, r) => s + r.length, 0);
+  const devCost = (grossSqyd * m.devCost + roadLen * (m.roadCostPerM ?? 0) + layout.openArea * (m.openCostPerM2 ?? 0)) * (o.cost ?? 1);
   const fees = layout.gross * m.approvalFee;
   const roadImpact = roadImpactFee(params, fees);
   const velocity = Math.max(0.1, m.velocity * (o.velocity ?? 1));

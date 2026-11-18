@@ -1,8 +1,8 @@
 // Pure SVG string for exports (paper styling regardless of UI theme).
-import { bbox, regionToPath, polyToPath } from '@/engine/geometry';
-import type { Layout, Plot } from '@/engine/types';
-import { ACRE } from '@/engine/geometry';
-import { PROFILES } from '@/rules/profiles';
+import { bbox, regionToPath, polyToPath } from '../../engine/geometry';
+import type { Layout, Plot } from '../../engine/types';
+import { ACRE } from '../../engine/geometry';
+import { PROFILES } from '../../rules/profiles';
 
 const INK = '#1B1E22';
 const LINE = '#2D6E7E';

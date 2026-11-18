@@ -22,6 +22,7 @@ import {
 import { parcelFor } from './parcel';
 import { roadRuns, splayForWidth, type GridGeom } from './roads';
 import { annotate } from './annotate';
+import { packRow } from './packing';
 import { assignOpen } from './openspace';
 import { areaStatement } from './areas';
 import type { Block, Buffer, Layout, Params, Plot, PlotSize } from './types';
@@ -40,6 +41,10 @@ export type Prepared = {
   depth: number;
   minPlot: number;
   gross: number;
+  /** Parcel after master-plan give-up. */
+  base: Region;
+  mpStrip: Region;
+  mpArea: number;
 };
 
 /** Ascending sequence repeated by weight, interleaved lo, hi, lo+1, hi−1… */
@@ -62,10 +67,12 @@ export function prepare(params: Params): Prepared {
   const origin = centroid(parcel);
   const robust = params.mode === 'rules' || params.constraints.length > 0;
   const periph = params.roads.boundary;
+  const mpStrip = robust ? approachStrip(parcel, params) : [];
+  const base: Region = mpStrip.length ? difference([parcel], mpStrip) : [parcel];
   const inset: Region = robust
     ? periph > 0
-      ? offsetRegion([parcel], -periph)
-      : [parcel]
+      ? offsetRegion(base, -periph)
+      : base
     : [naiveInset(parcel, periph)];
   const buffers = robust ? buildBuffers(params.constraints, inset) : [];
   const developable = buffers.length ? difference(inset, bufferUnion(buffers)) : inset;
@@ -83,7 +90,42 @@ export function prepare(params: Params): Prepared {
     depth,
     minPlot: params.plots.minPlotM2,
     gross: area(parcel),
+    base,
+    mpStrip,
+    mpArea: regionArea(mpStrip),
   };
+}
+
+/** South-most edge, or the chosen approach edge. */
+export function approachEdgeIndex(parcel: Poly, params: Params): number {
+  const n = parcel.length;
+  const pick = params.site.approachEdge;
+  if (pick !== null && pick >= 0 && pick < n) return pick;
+  let best = 0;
+  let bestY = Infinity;
+  for (let i = 0; i < n; i++) {
+    const my = (parcel[i].y + parcel[(i + 1) % n].y) / 2;
+    if (my < bestY) {
+      bestY = my;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Master-plan widening: a strip of half the width shortfall along the approach edge (widened equally both sides). */
+export function approachStrip(parcel: Poly, params: Params): Region {
+  const s = params.site;
+  const d = Math.max(0, Math.max(18, s.approachMP) - s.approachExisting) / 2;
+  if (d <= 0 || s.approachMP <= s.approachExisting) return [];
+  const i = approachEdgeIndex(parcel, params);
+  const a = parcel[i];
+  const b = parcel[(i + 1) % parcel.length];
+  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  const nx = -(b.y - a.y) / len;
+  const ny = (b.x - a.x) / len;
+  const rect: Poly = [a, b, { x: b.x + nx * d, y: b.y + ny * d }, { x: a.x + nx * d, y: a.y + ny * d }];
+  return intersect([parcel], [rect]);
 }
 
 type WorkBlock = Block & { fill: [number, number]; fillRegion: Region; endRoad: [boolean, boolean] };
@@ -199,6 +241,17 @@ export function layoutWith(prep: Prepared, g: GridConfig, roadOverride?: { front
   const plots: Plot[] = [];
   const seq = prep.widths;
   let k = 0;
+  const usePacking = rules && params.plots.packing === 'dp';
+  const packMemo = new Map<string, { sqyd: number; width: number }[]>();
+  const packCached = (L: number, rd: number) => {
+    const key = `${L.toFixed(3)}|${rd.toFixed(3)}`;
+    let v = packMemo.get(key);
+    if (!v) {
+      v = packRow(L, rd, params.plots.sizes, params.plots.minWidth).widths;
+      packMemo.set(key, v);
+    }
+    return v;
+  };
   if (seq.length) {
     for (const b of blocks) {
       if (b.use !== 'plots') continue;
@@ -209,10 +262,16 @@ export function layoutWith(prep: Prepared, g: GridConfig, roadOverride?: { front
         const ry1 = ry0 + rd;
         const row: Plot[] = [];
         let x = xa;
-        while (x < xb - 1e-9) {
-          const s0 = seq[k % seq.length];
-          k++;
-          const w = rd === depth ? s0 : { sqyd: s0.sqyd, width: (s0.sqyd * SQYD) / rd };
+        const packed = usePacking ? packCached(xb - xa, rd) : null;
+        let pi = 0;
+        while (packed ? pi < packed.length : x < xb - 1e-9) {
+          let w: { sqyd: number; width: number };
+          if (packed) w = packed[pi++];
+          else {
+            const s0 = seq[k % seq.length];
+            k++;
+            w = rd === depth ? s0 : { sqyd: s0.sqyd, width: (s0.sqyd * SQYD) / rd };
+          }
           const prect: Rect = { x0: x, y0: ry0, x1: x + w.width, y1: ry1 };
           x += w.width;
           const reg = clipRegion(b.fillRegion, prect, robust);
@@ -266,7 +325,10 @@ export function layoutWith(prep: Prepared, g: GridConfig, roadOverride?: { front
     origin,
   );
 
-  annotate(plots, params, theta, origin);
+  const ei = approachEdgeIndex(prep.parcel, params);
+  const ea = prep.parcel[ei];
+  const eb = prep.parcel[(ei + 1) % prep.parcel.length];
+  annotate(plots, params, theta, origin, { x: (ea.x + eb.x) / 2, y: (ea.y + eb.y) / 2 });
 
   const toWorld = (r: Region) => rotateRegion(r, theta, origin);
   const worldBlocks: Block[] = blocks.map((b) => ({
@@ -292,6 +354,7 @@ export function layoutWith(prep: Prepared, g: GridConfig, roadOverride?: { front
     roadRuns: runs,
     buffers: prep.buffers,
     splays: toWorld(splayPolys),
+    mpStrip: prep.mpStrip,
     gross: prep.gross,
     netLayout: prep.gross,
     plotted: plots.reduce((s, p) => s + p.area, 0),

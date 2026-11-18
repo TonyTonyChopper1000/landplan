@@ -1,6 +1,6 @@
 // Minimal ASCII DXF (R12-style) writer: LWPOLYLINE-free POLYLINE entities on named layers, metres.
-import type { Layout } from '@/engine/types';
-import type { Poly } from '@/engine/geometry';
+import type { Layout } from '../../engine/types';
+import type { Poly } from '../../engine/geometry';
 
 function poly(layer: string, p: Poly, closed = true): string {
   const out = ['0', 'POLYLINE', '8', layer, '66', '1', '70', closed ? '1' : '0'];

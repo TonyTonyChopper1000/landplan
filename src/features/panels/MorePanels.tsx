@@ -1,7 +1,7 @@
 import { useProject, setSection } from '@/state/project';
 import { ROAD_TABLE } from '@/rules/regulations';
 import { DIRS } from '@/engine/types';
-import { Caps, Field, NumberInput, Segmented, Toggle } from '@/components/ui/controls';
+import { Caps, Field, NumberInput, Row, Segmented, Select, Toggle } from '@/components/ui/controls';
 import { SQYD } from '@/engine/geometry';
 
 export function PlotsPanel() {
@@ -36,6 +36,10 @@ export function PlotsPanel() {
       <Field label="Min plot area" unit="m²" value={Math.round(pl.minPlotM2 * 10) / 10} min={20} max={200} step={0.5} onChange={(v) => setSection('plots', { minPlotM2: v })} />
       <Field label="Min plot width" unit="m" hint={mode === 'parity' ? '(rule-aware)' : undefined} value={pl.minWidth} min={0} max={15} step={0.5} onChange={(v) => setSection('plots', { minWidth: v })} />
       <Toggle label="Allow mixed depths per block" hint="Rule-aware: top row uses 1.25× depth" checked={pl.mixedDepths} onChange={(v) => setSection('plots', { mixedDepths: v })} />
+      <Caps className="pt-2 pb-1">Width packing</Caps>
+      <Segmented label="Width packing" value={pl.packing} onChange={(v) => setSection('plots', { packing: v })} options={[{ value: 'cycle', label: 'v1 cycle' }, { value: 'dp', label: 'Optimal (DP, whole feet)' }]} />
+      <Caps className="pt-2 pb-1">Plot numbering</Caps>
+      <Segmented label="Plot numbering" value={pl.numbering} onChange={(v) => setSection('plots', { numbering: v })} options={[{ value: 'v1', label: 'Generation order' }, { value: 'serpentine', label: 'Serpentine from entry' }]} />
     </div>
   );
 }
@@ -125,10 +129,15 @@ export function MoneyPanel() {
     <div>
       <Field label="Base rate" unit="₹/yd²" value={m.baseRate} min={5000} max={150000} step={500} onChange={(v) => setSection('money', { baseRate: v })} />
       <Field label="Dev cost (gross)" unit="₹/yd²" value={m.devCost} min={0} max={30000} step={100} onChange={(v) => setSection('money', { devCost: v })} />
+      <Field label="Road cost" unit="₹/m" value={m.roadCostPerM} min={0} max={200000} step={500} onChange={(v) => setSection('money', { roadCostPerM: v })} />
+      <Field label="Open-space cost" unit="₹/m²" value={m.openCostPerM2} min={0} max={20000} step={50} onChange={(v) => setSection('money', { openCostPerM2: v })} />
       <Field label="Land cost" unit="₹/ac" value={m.landCost} min={0} max={200000000} step={500000} onChange={(v) => setSection('money', { landCost: v })} />
       <Field label="Approval fees" unit="₹/m²" value={m.approvalFee} min={0} max={2000} step={10} onChange={(v) => setSection('money', { approvalFee: v })} />
       <Toggle label="Road impact fee" hint="100% of DC (50% if 15 m vs MP 18 m)" checked={m.roadImpactFee} onChange={(v) => setSection('money', { roadImpactFee: v })} />
       <Field label="Mortgage" unit="%" value={m.mortPct} min={0} max={50} step={1} onChange={(v) => setSection('money', { mortPct: v })} />
+      <Row label="Mortgage policy">
+        <Select label="Mortgage policy" value={m.mortPolicy} onChange={(v) => setSection('money', { mortPolicy: v })} options={[{ value: 'highest', label: 'Highest numbers' }, { value: 'contiguous', label: 'Contiguous blocks' }, { value: 'lowest-value', label: 'Lowest value' }]} />
+      </Row>
       <Field label="Release after" unit="mo" value={m.releaseMonths} min={0} max={72} step={1} onChange={(v) => setSection('money', { releaseMonths: v })} />
       <Field label="Sales velocity" unit="/mo" value={m.velocity} min={1} max={60} step={1} onChange={(v) => setSection('money', { velocity: v })} />
       <Field label="Price escalation" unit="%/yr" value={m.escalation} min={0} max={20} step={0.5} onChange={(v) => setSection('money', { escalation: v })} />
