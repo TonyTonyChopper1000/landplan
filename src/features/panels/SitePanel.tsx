@@ -1,11 +1,12 @@
 import { useProject, setSection, setParam } from '@/state/project';
 import { useUi } from '@/state/ui';
 import { go105 } from '@/state/actions';
-import { PRESETS, PRESET_LABELS, presetParcel } from '@/engine/parcel';
+import { PRESETS, PRESET_LABELS, parcelFor, presetParcel } from '@/engine/parcel';
+import { reconcile } from '@/engine/reconcile';
 import { PROFILES } from '@/rules/profiles';
 import { ACRE, GUNTA, area as polyArea } from '@/engine/geometry';
 import type { Authority, PresetId } from '@/engine/types';
-import { Button, Caps, Field, Segmented, Select } from '@/components/ui/controls';
+import { Button, Caps, Field, NumberInput, Row, Segmented, Select } from '@/components/ui/controls';
 import { Icon } from '@/components/ui/Icon';
 import { fmtInt } from '@/lib/format';
 import { BearingsEditor } from './BearingsEditor';
@@ -127,7 +128,29 @@ export function SitePanel() {
       />
       <Field label="Existing approach road" unit="m" value={site.approachExisting} min={0} max={60} step={0.5} onChange={(v) => setSection('site', { approachExisting: v })} />
       <Field label="Master-plan road width" unit="m" value={site.approachMP} min={0} max={60} step={0.5} onChange={(v) => setSection('site', { approachMP: v })} />
+      <Row label="Approach-road edge">
+        <Select
+          label="Approach-road edge"
+          value={site.approachEdge === null ? 'auto' : String(site.approachEdge)}
+          onChange={(v) => setSection('site', { approachEdge: v === 'auto' ? null : Number(v) })}
+          options={[{ value: 'auto', label: 'South-most (auto)' }, ...parcelFor({ ...useProject.getState().params }).map((_, i) => ({ value: String(i), label: `Edge ${i + 1}` }))]}
+        />
+      </Row>
       <Field label="Road-affected strip" unit="m²" value={site.roadAffected} min={0} max={10000} step={10} onChange={(v) => setSection('site', { roadAffected: v })} />
+      <Caps className="pt-1">Record area (title)</Caps>
+      <div className="grid grid-cols-2 gap-2">
+        <NumberInput label="Record acres" unit="ac" value={site.recordAcres} min={0} step={1} onChange={(v) => setSection('site', { recordAcres: v })} />
+        <NumberInput label="Record guntas" unit="gn" value={site.recordGuntas} min={0} max={39.99} step={1} onChange={(v) => setSection('site', { recordGuntas: v })} />
+      </div>
+      {(() => {
+        const r = reconcile(a, site.recordAcres, site.recordGuntas);
+        return r.areaMismatchPct === null ? null : (
+          <p className={`num text-[11px] ${r.warning ? 'text-brake-ink' : 'text-lane-dim'}`}>
+            Drawn vs record: {r.areaMismatchPct >= 0 ? '+' : ''}
+            {r.areaMismatchPct.toFixed(2)}% {r.warning ? '— exceeds 2% tolerance' : '— within tolerance'}
+          </p>
+        );
+      })()}
       <div className="grid grid-cols-2 gap-2 pt-1">
         <label className="text-[11px] text-lane-dim">
           Survey nos.

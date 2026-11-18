@@ -27,3 +27,10 @@ Drawers: optimizer, assistant, export, command palette.
 ## Phases
 1 engine + parity · 2 shell/design system · 3 studio/optimizer · 4 feasibility/regulations ·
 5 schedule/financials · 6 constraints/parcel editor/map · 7 3D · 8 scenarios/compare/exports/assistant/polish.
+
+## Backend (Vercel)
+- `src/schemas` zod contracts → OpenAPI; `src/engine/{site,packing,search,result,hash,prng}.ts` v2 stages.
+- `src/server`: http types + RFC 7807, params merge/validate, auth + rate limit, storage port
+  (memory / Postgres), engine runs with caching, routes, exports, benchmarks, Node/Vercel adapters.
+- Build: `scripts/build-vercel.mjs` (esbuild bundle → `.vercel/output`), `scripts/dev-api.mjs`, `scripts/migrate.mjs`.
+- Tests: site intake, packing, fast-check properties, search, API.

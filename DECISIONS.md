@@ -44,3 +44,27 @@ The v1 HTML file was not available in the repository, so the engine was ported f
 - shadcn/ui CLI was not used (no network registry); accessible primitives are Radix Slider plus hand-built,
   token-styled components in `src/components/ui`.
 - Remaining `npm audit` items are dev-only tooling (vite/vitest/typescript-eslint transitive ranges).
+
+## Backend (Vercel)
+- **Target**: Vercel instead of the AWS stack in `docs/PROMPT_BACKEND.md` (user's choice). The build
+  writes Vercel Build Output (`.vercel/output`): the static app plus one Node 20 function for `/v1/*`.
+- **No monorepo split**: `src/engine`, `src/rules` and `src/schemas` are already isomorphic and are
+  imported by both the web app and `src/server`, so one package keeps the build simple.
+- **Router**: a small framework-free router (`src/server/routes.ts`) instead of Fastify; it runs
+  unchanged under Vercel, the local dev server and Vitest.
+- **Storage**: plain SQL migrations + the `postgres` driver instead of Drizzle. Without `DATABASE_URL`
+  the API uses per-instance memory; optimize jobs then run inside the request and return the result inline.
+- **Jobs**: no queue. `?stream=1` streams SSE from the request; with a database, the 202 flow keeps
+  running via Vercel `waitUntil` and stores progress/results in `runs`. Cancel aborts work on the same
+  instance and marks the job cancelled.
+- **engine v2** in the API = rule-aware mode starting from the GO 105 standards preset (splays,
+  9/1 split, 50 m² / 6 m, 15 % mortgage), DP packing and serpentine numbering, unless the caller overrides.
+- **DP packing**: like v1, the last plot in a row may overhang by up to 40 % of the smallest width and is
+  kept if ≥ 60 % survives clipping; otherwise the DP maximises filled frontage, then closeness to the
+  weighted mix. One best pattern per row (no k-best list).
+- **Search**: the full v1 grid seeds Nelder–Mead so v2 never scores below v1; the open-space placement is
+  swept exhaustively (instead of simulated annealing). Default cap 1,500 candidates.
+- **Master-plan give-up** is cut geometrically in rule-aware mode (strip of half the shortfall to
+  max(18 m, MP width) along the approach edge). Parity mode keeps the numeric deduction only.
+- **Benchmark**: the HMDA LP 000091 boundary is not digitised yet; the harness uses an equal-area
+  rectangle and flags the result as approximate.

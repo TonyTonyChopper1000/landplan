@@ -1,4 +1,4 @@
-// Independent, deliberately plain re-implementation of the v1 algorithm (§3 of PROMPT.md),
+// Independent, deliberately plain re-implementation of the v1 algorithm (§3 of docs/PROMPT_UI.md),
 // written in the single-function style of the v1 HTML file. It shares NO code with src/engine
 // so that parity tests compare two implementations, not one implementation with itself.
 // Fixtures in ./fixtures are generated from this file (see parity.test.ts).

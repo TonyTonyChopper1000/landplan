@@ -2,6 +2,8 @@
 import proj4 from 'proj4';
 import { union } from './clip';
 import { ACRE, GUNTA, area, centroid, ensureCCW, signedArea, type Poly, type Pt } from './geometry';
+import { reconcile, type Reconciliation } from './reconcile';
+export { reconcile, type Reconciliation };
 
 export class SiteError extends Error {
   constructor(message: string, public code: string) {
@@ -14,7 +16,6 @@ const UTM44N = '+proj=utm +zone=44 +datum=WGS84 +units=m +no_defs';
 const WGS84 = 'EPSG:4326';
 
 export type Crs = { local: 'EPSG:32644'; origin: [number, number] };
-export type Reconciliation = { drawnM2: number; recordM2: number | null; areaMismatchPct: number | null; warning: string | null };
 export type SiteResult = {
   polygon: Poly; // local metres, centred on the centroid, CCW
   crs: Crs | null;
@@ -89,18 +90,6 @@ export function cleanPolygon(p: Poly): Poly {
   }
   if (out.length < 3 || area(out) < 1) throw new SiteError('Polygon collapses after clean-up', 'poly-degenerate');
   return ensureCCW(out);
-}
-
-export function reconcile(drawnM2: number, recordAcres = 0, recordGuntas = 0, tolPct = 2): Reconciliation {
-  const recordM2 = recordAcres * ACRE + recordGuntas * GUNTA;
-  if (!recordM2) return { drawnM2, recordM2: null, areaMismatchPct: null, warning: null };
-  const pct = ((drawnM2 - recordM2) / recordM2) * 100;
-  return {
-    drawnM2,
-    recordM2,
-    areaMismatchPct: pct,
-    warning: Math.abs(pct) > tolPct ? `Drawn area differs from the record area by ${pct.toFixed(2)}% (tolerance ${tolPct}%)` : null,
-  };
 }
 
 function centred(p: Poly): { polygon: Poly; c: Pt } {
