@@ -2,7 +2,8 @@ import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useUi } from '@/state/ui';
 import { startDeriving } from '@/state/derived';
-import { hydrate, startAutosave } from '@/state/persist';
+import { hydrateProject, hydrateScratch, startAutosave } from '@/state/persist';
+import { link } from '@/router';
 import { useMedia, useMobile, useWide } from '@/lib/useMedia';
 import { TopBar } from '@/features/shell/TopBar';
 import { LeftRail, PanelStack, RailIcons } from '@/features/shell/LeftRail';
@@ -22,6 +23,7 @@ const FinancialsView = lazy(() => import('@/features/financials/FinancialsView')
 const CompareView = lazy(() => import('@/features/compare/CompareView').then((m) => ({ default: m.CompareView })));
 const OptimizerDrawer = lazy(() => import('@/features/studio/OptimizerDrawer').then((m) => ({ default: m.OptimizerDrawer })));
 const ExportDrawer = lazy(() => import('@/features/reports/ExportDrawer').then((m) => ({ default: m.ExportDrawer })));
+const OverviewView = lazy(() => import('@/features/overview/OverviewView').then((m) => ({ default: m.OverviewView })));
 const ThreeView = lazy(() => import('@/features/three/ThreeView'));
 
 function Drawer({ children, label, width = 380 }: { children: ReactNode; label: string; width?: number }) {
@@ -125,6 +127,8 @@ function Route() {
 
 function RouteInner({ tab }: { tab: ReturnType<typeof useUi.getState>['tab'] }) {
   switch (tab) {
+    case 'overview':
+      return <OverviewView />;
     case 'studio':
       return <StudioView />;
     case '3d':
@@ -146,36 +150,51 @@ function RouteInner({ tab }: { tab: ReturnType<typeof useUi.getState>['tab'] }) 
   }
 }
 
-export function App() {
-  const theme = useUi((s) => s.theme);
-  const [ready, setReady] = useState(false);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
+export function Workspace({ projectId }: { projectId?: string }) {
+  const [ready, setReady] = useState<'loading' | 'ok' | 'missing'>('loading');
   const md = useMedia('(min-width: 768px)');
   useShortcuts();
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-  }, [theme]);
-  useEffect(() => {
     let stopA = () => {};
     let stopB = () => {};
-    hydrate().finally(() => {
-      stopA = startDeriving();
-      stopB = startAutosave(setSavedAt);
-      setReady(true);
-    });
+    let alive = true;
+    setReady('loading');
+    useUi.setState({ tab: projectId ? 'overview' : 'studio', panel: projectId ? null : 'site', selected: [], highlight: null, drawer: 'none' });
+    (projectId ? hydrateProject(projectId) : hydrateScratch().then(() => true))
+      .then((ok) => {
+        if (!alive) return;
+        if (!ok) return setReady('missing');
+        stopA = startDeriving();
+        stopB = startAutosave();
+        setReady('ok');
+      })
+      .catch(() => alive && setReady('missing'));
     return () => {
+      alive = false;
       stopA();
       stopB();
     };
-  }, []);
+  }, [projectId]);
+  if (ready === 'missing')
+    return (
+      <div className="drafting-grid flex h-full items-center justify-center p-6">
+        <div className="max-w-sm rounded-[4px] border border-line bg-asphalt-2 p-5 text-center">
+          <h1 className="text-lg font-semibold">Project not found</h1>
+          <p className="mt-1 text-[12.5px] text-lane-dim">It may have been deleted, or it was saved in another browser.</p>
+          <a {...link('/projects')} className="mt-4 inline-flex h-8 items-center rounded-[4px] bg-signal px-3 text-[13px] font-medium text-[#140800]">
+            Back to projects
+          </a>
+        </div>
+      </div>
+    );
   return (
     <div className="grid h-full grid-cols-[minmax(0,1fr)] grid-rows-[48px_minmax(0,1fr)_auto] overflow-hidden">
-      <TopBar savedAt={savedAt} />
+      <TopBar />
       <div className="flex min-h-0">
         {md && <LeftRail />}
         <main className="flex min-w-0 flex-1 flex-col">
           <TabBar />
-          <div className="relative min-h-0 flex-1">{ready ? <Route /> : <div className="drafting-grid h-full" />}</div>
+          <div className="relative min-h-0 flex-1">{ready === 'ok' ? <Route /> : <div className="drafting-grid h-full" />}</div>
         </main>
       </div>
       <BottomDock />

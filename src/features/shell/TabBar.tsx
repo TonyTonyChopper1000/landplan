@@ -2,8 +2,10 @@ import { useUi, TABS, type Tab } from '@/state/ui';
 import { Icon } from '@/components/ui/Icon';
 import { cx } from '@/components/ui/controls';
 import { t } from '@/i18n';
+import { useWorkspace } from '@/state/workspace';
 
 const ICON: Record<Tab, string> = {
+  overview: 'chart',
   studio: 'grid',
   '3d': 'cube',
   schedule: 'table',
@@ -15,9 +17,10 @@ const ICON: Record<Tab, string> = {
 
 export function TabBar() {
   const tab = useUi((s) => s.tab);
+  const hasProject = useWorkspace((s) => !!s.meta);
   return (
     <div role="tablist" aria-label="Views" className="flex h-9 shrink-0 items-end gap-0.5 overflow-x-auto border-b border-line bg-asphalt px-2">
-      {TABS.map((id, i) => (
+      {TABS.filter((id) => id !== 'overview' || hasProject).map((id, i) => (
         <button
           key={id}
           role="tab"

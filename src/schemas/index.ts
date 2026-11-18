@@ -39,7 +39,7 @@ export const ParamsSchema = z.object({
   ),
   countBufferAsOpen: z.boolean(),
   plots: z.object({
-    depthFt: num.min(20).max(200),
+    depthFt: num.min(20).max(400),
     sizes: z.array(z.object({ sqyd: num.positive(), on: z.boolean(), weight: num.min(0).max(50) })).min(1),
     blockLen: num.min(20).max(1000),
     minPlotM2: num.min(1),
@@ -149,3 +149,21 @@ export const LayoutResultSchema = z.object({
 export type LayoutResult = z.infer<typeof LayoutResultSchema>;
 export type GenerateRequest = z.infer<typeof GenerateRequestSchema>;
 export type OptimizeRequest = z.infer<typeof OptimizeRequestSchema>;
+
+const projectType = z.enum(['plots', 'villas', 'farm']);
+const idPattern = z.string().regex(/^[\w-]{3,64}$/);
+export const ProjectCreateSchema = z.object({
+  id: idPattern.optional(),
+  name: z.string().min(1).max(200),
+  type: projectType.default('plots'),
+  details: z.record(z.string(), z.unknown()).default({}),
+  summary: z.record(z.string(), z.unknown()).optional(),
+  scenario: z.object({ id: idPattern.optional(), name: z.string().max(200).default('Base case'), params: ParamsInputSchema.default({}) }).optional(),
+});
+export const ProjectPatchSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  type: projectType.optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
+  summary: z.record(z.string(), z.unknown()).nullable().optional(),
+  activeScenario: z.string().max(64).nullable().optional(),
+});

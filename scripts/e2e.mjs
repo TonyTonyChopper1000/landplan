@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 const { chromium } = createRequire(import.meta.url)('playwright');
 
-const URL = process.env.APP_URL ?? 'http://localhost:4173/';
+const URL = process.env.APP_URL ?? 'http://localhost:4173/studio';
 const OUT = process.env.SHOTS ?? 'shots';
 mkdirSync(OUT, { recursive: true });
 const results = [];

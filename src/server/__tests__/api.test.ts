@@ -66,3 +66,25 @@ describe('API /v1', () => {
     expect(r.benchmarks[0].meanAbsErrorPctPoints).toBeLessThan(10);
   }, 30000);
 });
+
+describe('project metadata (wizard flow)', () => {
+  it('creates a typed project with its first scenario, upserts scenarios and patches the summary', async () => {
+    const r = await call('POST', '/projects', { name: 'Farm', type: 'farm', details: { location: 'Chevella' }, scenario: { id: 'scn_test1', name: 'Base', params: { plots: { depthFt: 220 } } } });
+    expect(r.status).toBe(201);
+    const p = body(r) as { id: string; type: string; activeScenario: string };
+    expect(p.type).toBe('farm');
+    expect(p.activeScenario).toBe('scn_test1');
+    expect((await call('PUT', `/projects/${p.id}/scenarios/scn_new2`, { name: 'Alt', params: { site: { acres: 30 } } })).status).toBe(201);
+    expect((await call('PATCH', `/projects/${p.id}`, { summary: { plots: 10 }, activeScenario: 'scn_new2' })).status).toBe(200);
+    const full = body(await call('GET', `/projects/${p.id}`, undefined, 'include=params')) as { scenarios: { params?: unknown }[]; summary: { plots: number } };
+    expect(full.scenarios).toHaveLength(2);
+    expect(full.scenarios[0].params).toBeTruthy();
+    expect(full.summary.plots).toBe(10);
+  });
+  it('rejects invalid scenario params without creating the project', async () => {
+    const before = (body(await call('GET', '/projects')) as unknown as unknown[]).length;
+    const r = await call('POST', '/projects', { name: 'Bad', scenario: { params: { roads: { frontage: -5 } } } });
+    expect(r.status).toBe(400);
+    expect((body(await call('GET', '/projects')) as unknown as unknown[]).length).toBe(before);
+  });
+});

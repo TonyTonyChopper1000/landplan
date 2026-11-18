@@ -16,7 +16,7 @@
     "fixtures": "vitest run src/engine/__tests__/parity.test.ts -u",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "e2e": "node scripts/e2e.mjs",
+    "e2e": "node scripts/e2e.mjs && node scripts/e2e-projects.mjs",
     "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {

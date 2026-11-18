@@ -34,7 +34,7 @@ export function useShortcuts() {
       else if (k === ']') rotateGrid(5);
       else if (k === 'l') useUi.setState({ tool: 'lasso' });
       else if (k === 'v') useUi.setState({ tool: 'select' });
-      else if (/^[1-7]$/.test(k)) useUi.setState({ tab: TABS[Number(k) - 1] });
+      else if (/^[1-8]$/.test(k)) useUi.setState({ tab: TABS[Number(k) - 1] });
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
