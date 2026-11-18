@@ -34,7 +34,9 @@ export type RenderProps = {
 const GOOGLE_KEY = (import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined) ?? '';
 
 export function isGeoreferenced(layout: Layout) {
-  return layout.params.site.source === 'drawn' || layout.params.site.source === 'import';
+  const s = layout.params.site;
+  // A DXF import has no location: its anchor stays at the default, so it is not georeferenced.
+  return s.source === 'drawn' || (s.source === 'import' && !(s.anchor.lat === 17.385 && s.anchor.lon === 78.4867));
 }
 
 function Heading() {

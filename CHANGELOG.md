@@ -1,5 +1,11 @@
 # Changelog
 
+## Real land boundary and satellite plan
+- New-project wizard: **Land boundary** — keep a standard shape, or trace the corners on satellite imagery,
+  jump to pasted coordinates, or import KML / GeoJSON / DXF. The layout is generated on the exact boundary.
+- Studio: **Satellite** toggle draws the generated layout (plots by status, roads, open space, boundary) on
+  Esri imagery for traced or KML-imported parcels, with hover details and an opacity slider. No new dependencies.
+
 ## 3D Render mode and public viewer
 - 3D tab: **Massing / Render** toggle. Massing is unchanged (default); **Generate render** builds a detailed,
   project-type-aware scene with a progress bar. Lazy-loaded; the main bundle does not grow.
