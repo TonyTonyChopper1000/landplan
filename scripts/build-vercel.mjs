@@ -14,7 +14,7 @@ await build({
   entryPoints: ['src/server/vercel.ts'],
   bundle: true,
   platform: 'node',
-  target: 'node20',
+  target: 'node22',
   format: 'esm',
   outfile: `${fn}/index.mjs`,
   sourcemap: 'linked',
@@ -22,7 +22,7 @@ await build({
   banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
   logLevel: 'warning',
 });
-writeFileSync(`${fn}/.vc-config.json`, JSON.stringify({ runtime: 'nodejs20.x', handler: 'index.mjs', launcherType: 'Nodejs', shouldAddHelpers: false, supportsResponseStreaming: true, maxDuration: 60 }, null, 2));
+writeFileSync(`${fn}/.vc-config.json`, JSON.stringify({ runtime: 'nodejs22.x', handler: 'index.mjs', launcherType: 'Nodejs', shouldAddHelpers: false, supportsResponseStreaming: true, maxDuration: 60 }, null, 2));
 writeFileSync(`${fn}/package.json`, JSON.stringify({ type: 'module' }));
 
 writeFileSync(

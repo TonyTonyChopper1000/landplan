@@ -47,7 +47,7 @@ The v1 HTML file was not available in the repository, so the engine was ported f
 
 ## Backend (Vercel)
 - **Target**: Vercel instead of the AWS stack in `docs/PROMPT_BACKEND.md` (user's choice). The build
-  writes Vercel Build Output (`.vercel/output`): the static app plus one Node 20 function for `/v1/*`.
+  writes Vercel Build Output (`.vercel/output`): the static app plus one Node 22 function for `/v1/*`.
 - **No monorepo split**: `src/engine`, `src/rules` and `src/schemas` are already isomorphic and are
   imported by both the web app and `src/server`, so one package keeps the build simple.
 - **Router**: a small framework-free router (`src/server/routes.ts`) instead of Fastify; it runs

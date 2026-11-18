@@ -15,7 +15,7 @@ against cited regulations, and produces the plot schedule, area statement and fi
 
 ## Quick start
 
-Requires Node 20 or newer.
+Requires Node 22 or newer.
 
 ```bash
 npm ci
