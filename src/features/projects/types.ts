@@ -29,6 +29,8 @@ export type ProjectDetails = {
   brandColour?: string;
   /** Traced or imported land boundary; absent = standard shape. */
   boundary?: Boundary;
+  /** Road names shown on the 3D render, keyed by road-run id. */
+  roadNames?: Record<string, string>;
   /** HMDA / DTCP layout permission number once approved; stamped on exports. */
   lpNumber?: string;
 };

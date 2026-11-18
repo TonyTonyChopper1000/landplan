@@ -49,35 +49,35 @@
 
 /* Paper theme */
 :root[data-theme='light'] {
-  --asphalt: #f4f1ea;
-  --asphalt-2: #ece8de;
-  --asphalt-3: #e2ddd1;
-  --line: #cdc6b6;
-  --lane: #1b1e22;
-  --lane-dim: #575c63;
-  --signal: #c4500a;
+  --asphalt: #f6f8fb;
+  --asphalt-2: #ffffff;
+  --asphalt-3: #eaeef4;
+  --line: #d5dce6;
+  --lane: #111827;
+  --lane-dim: #556070;
+  --signal: #e0590b;
   --signal-ink: #b4470a;
-  --blueprint: #2d6e7e;
+  --blueprint: #1f6fd1;
   --sign-green: #2a7a4f;
   --sign-green-ink: #23683f;
   --brake: #b8372f;
   --brake-ink: #a3302a;
-  --conflict: #2d6e7e;
+  --conflict: #1f6fd1;
   --unk: #8a8f96;
   --band-1: #b08a12;
   --band-2: #2d8fa3;
   --band-3: #7158c0;
   --band-4: #d9611c;
   --band-irr: #9aa0a8;
-  --road: #e9e4d8;
-  --road-edge: #b9b09c;
-  --park: #cfe0c9;
-  --util: #e6d6b0;
-  --social: #ddd2ec;
-  --grid: rgba(45, 110, 126, 0.08);
-  --grid-major: rgba(45, 110, 126, 0.16);
-  --glow-blue: 0 0 0 1px rgba(45, 110, 126, 0.35);
-  --glow-signal: 0 0 0 1px rgba(196, 80, 10, 0.5);
+  --road: #e3e8ef;
+  --road-edge: #a9b4c2;
+  --park: #cdebd3;
+  --util: #d9e8fb;
+  --social: #e6ddf7;
+  --grid: rgba(31, 111, 209, 0.07);
+  --grid-major: rgba(31, 111, 209, 0.14);
+  --glow-blue: 0 0 0 1px rgba(31, 111, 209, 0.35);
+  --glow-signal: 0 0 0 1px rgba(224, 89, 11, 0.45);
   color-scheme: light;
 }
 
@@ -325,3 +325,14 @@ input[type='number']::-webkit-inner-spin-button {
   justify-content: center;
 }
 .docs-prose b { font-weight: 700; }
+
+/* Light theme: low-opacity orange tints read as beige/skin on white, so selection and
+   highlight fills use a cool blue tint instead (borders and buttons keep the accent). */
+:root[data-theme='light'] .bg-signal\/5,
+:root[data-theme='light'] .bg-signal\/\[0\.06\],
+:root[data-theme='light'] .bg-signal\/10,
+:root[data-theme='light'] .bg-signal\/15,
+:root[data-theme='light'] .bg-signal\/20,
+:root[data-theme='light'] .bg-signal\/25 {
+  background-color: rgb(31 111 209 / 0.08);
+}

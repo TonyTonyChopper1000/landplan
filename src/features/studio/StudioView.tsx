@@ -40,7 +40,7 @@ export function StudioView() {
             disabled={!geo}
             aria-pressed={sat && geo}
             title={geo ? 'Show the layout on satellite imagery' : 'Trace the parcel on the map or import KML to see it on satellite imagery'}
-            className="absolute top-3 right-3 z-20 rounded-full border border-line bg-asphalt-2/90 px-3 py-1 text-[12px] backdrop-blur hover:text-lane disabled:opacity-40 aria-pressed:bg-lane aria-pressed:text-asphalt"
+            className="absolute top-3 left-3 z-20 rounded-full border border-line bg-asphalt-2/90 px-3 py-1 text-[12px] backdrop-blur hover:text-lane disabled:opacity-40 aria-pressed:bg-lane aria-pressed:text-asphalt"
           >
             Satellite
           </button>
